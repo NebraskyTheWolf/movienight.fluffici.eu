@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Item, Menu, useContextMenu } from "react-contexify";
 import "react-contexify/dist/ReactContexify.css";
 import axios from 'axios';
-import { useSession, signIn } from 'next-auth/react';
+import {useSession, signIn, signOut} from 'next-auth/react';
 import pusher from '../lib/pusher';
 import { CHAT_PERMISSION, USER_FLAGS } from '../lib/constants';
 import { getAvatarsIconUrl, hasPermission } from '../lib/utils';
@@ -335,31 +335,13 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             {showWarning && (
                 <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
                     <div className="bg-white p-8 rounded shadow-lg text-center">
-                        <h2 className="text-2xl font-bold mb-4">Warning</h2>
-                        <p className="mb-4">{warningMessage}</p>
-                        <button onClick={() => setShowWarning(false)} className="px-4 py-2 bg-red-500 text-white rounded">
+                        <h2 className="text-2xl font-bold mb-4 text-red-500">Warning</h2>
+                        <p className="mb-4 text-black">{warningMessage}</p>
+                        <button onClick={() => signOut({ callbackUrl: window.location.href, redirect: false })} className="px-4 py-2 bg-red-500 text-white rounded">
                             Close
                         </button>
                     </div>
                 </div>
-            )}
-            {showWarning && (
-                <Dialog open={showWarning}>
-                    <DialogContent className="w-full max-w-lg rounded shadow-lg bg-gray-800">
-                        <DialogHeader className="border-b p-4">
-                            <DialogTitle className="text-lg font-semibold">Offence Warning</DialogTitle>
-                        </DialogHeader>
-                        <DialogDescription className="p-4 flex flex-col">{warningMessage}</DialogDescription>
-                        <DialogFooter className="p-4">
-                            <Button
-                                variant="outline"
-                                onClick={() => router.push('/')}
-                            >
-                                I understand
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
             )}
             {!isOverlay && (
                 <button

@@ -31,9 +31,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const { ban } = requestingUser.sanction
+        if (requestingUser.permissions == 0) {
+            const ban = requestingUser.sanction.ban;
 
-        if (ban) {
             await pusher.trigger('chat-channel', 'banned-user', { id: requestingUser.discordId });
 
             return res.status(200).json({ status: true, ban });
