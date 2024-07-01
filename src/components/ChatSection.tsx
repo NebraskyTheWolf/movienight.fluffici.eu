@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import {decodeFromBase64, encodeToBase64} from "next/dist/build/webpack/loaders/utils";
 
 interface AutoModerationSettings {
     blacklist: string[];
@@ -29,7 +30,8 @@ const ChatSection: React.FC = () => {
         const fetchChatSettings = async () => {
             try {
                 const response = await axios.get('/api/chat/settings');
-                setSettings(response.data);
+                const decodedSettings = decodeFromBase64<string>(response.data.settings);
+                setSettings(JSON.parse(decodedSettings));
             } catch (error) {
                 console.error('Failed to fetch chat settings', error);
             } finally {
@@ -105,7 +107,8 @@ const ChatSection: React.FC = () => {
     const saveSettings = async () => {
         setSaving(true);
         try {
-            await axios.put('/api/chat/settings', settings);
+            const encodedSettings = encodeToBase64(JSON.stringify(settings));
+            await axios.get(`/api/chat/settings?q=${encodedSettings}`);
             alert('Settings updated successfully!');
         } catch (error) {
             console.error('Failed to update settings', error);
