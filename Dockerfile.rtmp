@@ -1,0 +1,19 @@
+# RTMP service Dockerfile
+FROM node:18-bookworm
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+COPY . .
+
+# Set up FFmpeg
+RUN apt-get update && apt-get install -y ffmpeg
+
+VOLUME ./media
+
+EXPOSE 1990 8060
+CMD ["npm", "run", "start:rtmp"]

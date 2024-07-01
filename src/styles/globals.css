@@ -1,0 +1,296 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #030e29;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6B7280;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #393c42;
+}
+
+.react-player__play-icon {
+  border-color: #fff transparent transparent transparent !important;
+}
+
+.react-player__controls {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.react-player__controls button {
+  color: #fff !important;
+}
+
+.react-player__progress {
+  background: #e50914 !important;
+}
+
+/* react-resizable styles */
+.react-resizable {
+  position: relative;
+}
+
+/* rc-tooltip styles */
+.rc-tooltip-inner {
+  background-color: #333 !important;
+  color: #fff !important;
+  padding: 5px 10px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+}
+
+
+.react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  background: #ddd;
+  cursor: se-resize;
+}
+
+.react-resizable-box {
+  box-sizing: border-box;
+}
+
+.button-red {
+  color: #FF002E;
+}
+
+.background-red {
+  background-color: #FF002E;
+}
+
+.background-blue {
+  background-color: #0a4fff;
+}
+
+.mt-5 {
+  margin-top: 5px;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-image {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltip-image {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* In your styles.css or equivalent */
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-left-color: #fff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+
+  .light {
+    --background: 0 0% 95%; /* Light gray for background */
+    --foreground: 222.2 84% 4.9%; /* Very dark blue for foreground text */
+
+    --card: 0 0% 100%; /* White for card background */
+    --card-foreground: 222.2 84% 4.9%; /* Very dark blue for card text */
+
+    --popover: 0 0% 100%; /* White for popover background */
+    --popover-foreground: 222.2 84% 4.9%; /* Very dark blue for popover text */
+
+    --primary: 222.2 47.4% 11.2%; /* Dark navy for primary */
+    --primary-foreground: 210 40% 98%; /* Very pale cyan for primary foreground text */
+
+    --secondary: 210 40% 96.1%; /* Alice blue for secondary background */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* Dark navy for secondary text */
+
+    --muted: 210 40% 96.1%; /* Alice blue for muted background */
+    --muted-foreground: 215 20.2% 46.9%; /* Grayish blue for muted text */
+
+    --accent: 210 40% 96.1%; /* Alice blue for accent background */
+    --accent-foreground: 222.2 47.4% 11.2%; /* Dark navy for accent text */
+
+    --destructive: 0 84.2% 60.2%; /* Bright red for destructive background */
+    --destructive-foreground: 210 40% 98%; /* Very pale cyan for destructive text */
+
+    --border: 214.3 31.8% 91.4%; /* Light grayish blue for borders */
+    --input: 214.3 31.8% 91.4%; /* Light grayish blue for input background */
+    --ring: 214.3 31.8% 91.4%; /* Light grayish blue for ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+@layer components {
+  .animate-enter {
+    @apply transform transition-all duration-300 ease-in-out;
+    transform: translateY(0);
+  }
+  .animate-leave {
+    @apply transform transition-all duration-300 ease-in-out;
+    transform: translateY(-100%);
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded font-semibold focus:outline-none transition duration-200;
+  }
+
+  @keyframes gradient-wave {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Apply the gradient animation to the button */
+  .btn-premium {
+    @apply relative overflow-hidden bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2 px-4 rounded-full shadow-lg;
+    background-size: 200% 200%;
+    animation: gradient-wave 4s ease infinite;
+  }
+
+  .btn-premium:hover {
+    @apply shadow-xl;
+  }
+
+  .btn-premium:active {
+    @apply bg-gradient-to-r from-blue-700 to-cyan-700;
+  }
+
+  .btn-premium:focus {
+    @apply outline-none ring-4 ring-blue-300;
+  }
+
+  .btn-purchase {
+    @apply bg-gradient-to-r from-yellow-600 via-yellow-700 to-yellow-800 text-white font-bold py-2 px-4 rounded-full shadow-lg;
+  }
+
+  .btn-purchase:hover {
+    @apply bg-gradient-to-r from-yellow-700 via-yellow-800 to-yellow-900 shadow-xl;
+  }
+
+  .btn-purchase:active {
+    @apply bg-gradient-to-r from-yellow-800 via-yellow-900 to-yellow-950;
+  }
+
+  .btn-purchase:focus {
+    @apply outline-none ring-4 ring-yellow-500;
+  }
+}
