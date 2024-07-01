@@ -12,6 +12,8 @@ import {showToast} from "@/components/toast.tsx";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
 import {Link} from 'lucide-react';
+import UsersSection from "@/components/users.tsx";
+import ChatSection from './ChatSection';
 
 export async function getServerSideProps(context: { req: GetSessionParams | undefined; }) {
     const session = await getSession(context.req)
@@ -38,7 +40,7 @@ const DashboardScreen: React.FC = () => {
     const renderSection = () => {
         switch (activeSection) {
             case 'home':
-                return <HomeSection />;
+                return <UsersSection />;
             case 'analytics':
                 return <AnalyticsSection />;
             case 'settings':
@@ -46,7 +48,7 @@ const DashboardScreen: React.FC = () => {
             case 'chat':
                 return <ChatSection />;
             default:
-                return <HomeSection />;
+                return <UsersSection />;
         }
     };
 
@@ -89,19 +91,5 @@ const DashboardScreen: React.FC = () => {
         </div>
     );
 };
-
-const HomeSection: React.FC = () => (
-    <div className="p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Home</h2>
-        <p>Welcome to your dashboard!</p>
-    </div>
-);
-
-const ChatSection: React.FC = () => (
-    <div className="p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Chat</h2>
-        <p>Here you can manage chats.</p>
-    </div>
-);
 
 export default DashboardScreen;

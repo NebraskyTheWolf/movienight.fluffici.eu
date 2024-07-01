@@ -78,6 +78,7 @@
     "react-select": "^5.8.0",
     "react-spinners": "^0.14.1",
     "react-spring": "^9.7.3",
+    "react-switch": "^7.0.0",
     "react-table": "^7.8.0",
     "react-tooltip": "^5.27.0",
     "shadcn-ui": "^0.8.0",
