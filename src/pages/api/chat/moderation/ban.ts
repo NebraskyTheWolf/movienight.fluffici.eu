@@ -7,6 +7,7 @@ import {hasPermission} from "@/lib/utils.ts";
 import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
 import {removePermission} from "@/lib/permission.ts";
+import {v4} from "uuid";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -62,6 +63,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
         await pusher.trigger('chat-channel', 'user-banned', { id: targetUser.discordId });
+        await pusher.trigger('chat-channel', 'new-message', {
+            id: v4(),
+            content: `@${session.user.name} banned ${targetUser.id} reason ${reason}`,
+            type: 'system',
+        });
 
         res.status(200).json({ status: true });
     } catch (error) {

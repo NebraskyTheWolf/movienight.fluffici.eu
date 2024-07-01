@@ -101,7 +101,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         const isBanned = async () => {
             try {
                 const response = await axios.get('/api/chat/is-banned');
-                setWarningMessage(`You have been banned, Reason: ${response.data.ban.reason}`)
+                setWarningMessage(`You have been banned for breaking the rules.`)
                 setShowWarning(response.data.status)
             } catch (error) {}
         }

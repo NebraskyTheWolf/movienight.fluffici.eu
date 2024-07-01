@@ -9,11 +9,11 @@ import {showToast} from "@/components/toast.tsx";
 import {v4} from "uuid";
 import {encodeToBase64} from "next/dist/build/webpack/loaders/utils";
 import {Data} from "@/pages/api/stream/patch.ts";
+import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/dialog.tsx";
 
 const SettingsSection: React.FC = () => {
-    const { data: session } = useSession();
+    const [showConfirm, setShowConfirm] = useState<boolean>(false)
     const [streamKey, setStreamKey] = useState<string>();
-    const [user, setUser] = useState<IProfile>();
     const [streamInfo, setStreamInfo] = useState({
         title: '',
         contentRating: { age: 0, reason: '' }
@@ -38,7 +38,6 @@ const SettingsSection: React.FC = () => {
         const fetchUser = async () => {
             try {
                 const response = await axios.get('/api/fetch-user');
-                setUser(response.data);
                 setStreamKey(response.data.streamKey)
             } catch (error) {
                 showToast("Failed to fetch user information", "error")
@@ -52,6 +51,8 @@ const SettingsSection: React.FC = () => {
         try {
             const response = await axios.post('/api/stream/regenerate-key');
             setStreamKey(response.data.newKey);
+            setShowConfirm(false)
+            showToast("Your stream key has been regenerated", "success")
         } catch (error) {
             showToast("'Failed to regenerate stream key", "error")
         }
@@ -142,7 +143,7 @@ const SettingsSection: React.FC = () => {
                         className="flex-1 p-2 border rounded bg-gray-900 text-gray-300 border-gray-600 mr-2"
                     />
                     <Button
-                        onClick={regenerateStreamKey}
+                        onClick={() => setShowConfirm(true)}
                         variant="destructive"
                     >
                         Regenerate
@@ -155,6 +156,33 @@ const SettingsSection: React.FC = () => {
                     Save
                 </Button>
             </div>
+            {showConfirm && (
+                <Dialog open={showConfirm} onOpenChange={() => setShowConfirm(false)}>
+                    <DialogContent className="w-full max-w-lg rounded shadow-lg bg-gray-800">
+                        <DialogHeader className="border-b p-4">
+                            <DialogTitle className="text-lg font-semibold">Are you sure?</DialogTitle>
+                        </DialogHeader>
+                        <DialogDescription className="p-4 flex flex-col">If you continue, your stream key will be regenerated!</DialogDescription>
+                        <DialogFooter className="p-4">
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={regenerateStreamKey}
+                                className="mr-2"
+                            >
+                                Continue
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowConfirm(false)}
+                            >
+                                Cancel
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 };
