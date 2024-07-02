@@ -616,7 +616,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                                 </div>
                                             </div>
                                         ) : message.type === 'reply' ? (
-                                            <div className="relative pl-12">
+                                            <div className="relative">
                                                 <div className="ml-10 relative border-l-4 border-gray-600 pl-4">
                                                     {message.repliedMessage ? (
                                                         <div className="mb-2 bg-gray-800 p-2 rounded">
@@ -639,14 +639,14 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                                     ) : null}
                                                     <div className="flex items-center space-x-2 mb-2">
                                                         <img
-                                                            src={getAvatarsIconUrl(message.author)}
-                                                            alt={message.author!.id}
+                                                            src={getAvatarsIconUrl(message.user)}
+                                                            alt={message.user!.id}
                                                             className="w-8 h-8 rounded-full cursor-pointer"
-                                                            onClick={() => handleUserClick(message.author)}
+                                                            onClick={() => handleUserClick(message.user)}
                                                         />
                                                         <span className="font-bold text-indigo-500 cursor-pointer"
-                                                              onClick={() => handleUserClick(message.author)}>
-                                                            {message.author!.name}
+                                                              onClick={() => handleUserClick(message.user)}>
+                                                            {message.user!.name}
                                                         </span>
                                                         <span className="text-gray-400">replied</span>
                                                     </div>
