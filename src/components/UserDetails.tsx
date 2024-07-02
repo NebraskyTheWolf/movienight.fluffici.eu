@@ -26,6 +26,8 @@ const PERMISSION_LABELS = {
     [CHAT_PERMISSION.SEND_EMOJIS]: 'Send Emojis',
     [CHAT_PERMISSION.REPLY_MESSAGE]: 'Reply Message',
     [CHAT_PERMISSION.PUBLISH_STREAM]: 'Publish Stream',
+    [CHAT_PERMISSION.JOIN_PRESENCE]: 'Join Presence',
+    [CHAT_PERMISSION.USE_COMMAND]: 'Use Command'
 };
 
 interface DiscordUser {
