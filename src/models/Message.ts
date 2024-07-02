@@ -60,18 +60,33 @@ const EmbedMessage: Schema = new Schema({
     footer: { type: EmbedFooter, required: false, default: {} }
 });
 
-export interface IMessage {
+export interface IRepliedMessage {
     _id: string;
     streamId: string;
     content?: string;
     command?: string;
-    type: 'user' | 'system' | 'gif' | 'bot';
+    type: 'user' | 'system' | 'gif' | 'bot' | 'reply';
     user: User;
     author?: User;
     profile: IProfile;
     timestamp: number;
     reactions: Reaction[];
     embeds?: EmbedMessage[];
+}
+
+export interface IMessage {
+    _id: string;
+    streamId: string;
+    content?: string;
+    command?: string;
+    type: 'user' | 'system' | 'gif' | 'bot' | 'reply';
+    user: User;
+    author?: User;
+    profile: IProfile;
+    timestamp: number;
+    reactions: Reaction[];
+    embeds?: EmbedMessage[];
+    repliedMessage?: IRepliedMessage;
 }
 
 const UserSchema: Schema = new Schema({
@@ -117,17 +132,32 @@ const ReactionSchema: Schema = new Schema({
     users: { type: [UserSchema], required: true },
 });
 
+const RepliedMessageSchema: Schema = new Schema({
+    streamId: { type: String, required: true },
+    content: { type: String, required: false },
+    command: { type: String, required: false },
+    type: { type: String, enum: ['user', 'system', 'gif', 'bot', 'reply'], required: true },
+    user: { type: UserSchema, required: true },
+    author: { type: UserSchema, required: false },
+    profile: { type: ProfileSchema, required: true },
+    timestamp: { type: Number, required: true },
+    reactions: { type: [ReactionSchema], default: [] },
+    embeds: { type: [EmbedMessage], default: [] }
+});
+
+
 const MessageSchema: Schema = new Schema({
     streamId: { type: String, required: true },
     content: { type: String, required: false },
     command: { type: String, required: false },
-    type: { type: String, enum: ['user', 'system', 'gif', 'bot'], required: true },
+    type: { type: String, enum: ['user', 'system', 'gif', 'bot', 'reply'], required: true },
     user: { type: UserSchema, required: true },
     author: { type: UserSchema, required: false },
     profile: { type: ProfileSchema, required: true },
     timestamp: { type: Number, required: true },
     reactions: { type: [ReactionSchema], default: [] },
     embeds: { type: [EmbedMessage], default: [] },
+    repliedMessage: { type: RepliedMessageSchema, default: {}, required: false }
 });
 
 const Message: Model<IMessage> = mongoose.models.Message || mongoose.model<IMessage>('Message', MessageSchema);

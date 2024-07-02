@@ -3,14 +3,24 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
 import axios from 'axios';
-import {FaCogs, FaComments, FaCompress, FaExpand, FaPause, FaPlay, FaVolumeMute, FaVolumeUp} from "react-icons/fa";
+import {
+    FaCogs,
+    FaComments,
+    FaCompress,
+    FaExpand,
+    FaPause,
+    FaPlay,
+    FaUserLock,
+    FaVolumeMute,
+    FaVolumeUp
+} from "react-icons/fa";
 import {OnProgressProps} from "react-player/base";
 import Tooltip from 'rc-tooltip';
 import 'rc-tooltip/assets/bootstrap.css';
 import Chat from '@/components/chat';
 import {RingLoader} from 'react-spinners';
 import {IStream} from "@/models/Stream.ts";
-import {useSession} from "next-auth/react";
+import {signOut, useSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
 import pusher from '../lib/pusher';
@@ -400,6 +410,15 @@ const Player: React.FC<PlayerProps> = () => {
                                     <button className="p-2 md:p-4 text-xl md:text-2xl rounded"
                                             onClick={() => router.push("/dashboard")}>
                                         <FaCogs className="text-yellow-200"/>
+                                    </button>
+                                </Tooltip>
+                            )}
+
+                            {session && (
+                                <Tooltip overlay="Log out" placement="top">
+                                    <button className="p-2 md:p-4 text-xl md:text-2xl rounded"
+                                            onClick={() => signOut({ callbackUrl: window.location.href, redirect: false })}>
+                                        <FaUserLock className="text-red-500"/>
                                     </button>
                                 </Tooltip>
                             )}

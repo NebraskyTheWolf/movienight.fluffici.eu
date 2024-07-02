@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ status: false, error: 'Stream not found' });
     }
 
-    const {content, type } = req.body;
+    const {content, messageId } = req.body;
 
     if (content instanceof EmbedMessage) {
         return res.status(400).json({ status: false, error: 'Invalid message content' });
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const profile = session.profile
 
-    if (!profile || !hasPermission(profile, CHAT_PERMISSION.SEND_MESSAGE)) {
+    if (!profile || !hasPermission(profile, CHAT_PERMISSION.REPLY_MESSAGE)) {
         return res.status(403).json({ status: false, error: 'Forbidden' });
     }
 
@@ -60,13 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         reactions: []
     }
 
-    if (type !== "user" && type !== "gif") {
-        return res.status(400).json({ status: false, error: 'Invalid message type' });
-    }
-
-    if (type === 'gif' && !hasPermission(session.profile, CHAT_PERMISSION.SEND_GIF)) {
-        return res.status(403).json({ status: false, error: 'Forbidden' });
-    }
+    const repliedMessage = await Message.findOne({ _id: messageId })
 
     const chatSettings = await ChatSettings.findOne({ _id: '668348b752dc60219a0aa9fe' })
 
@@ -89,6 +83,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (isContentBlacklisted)
         return res.status(403).json({ status: false, error: 'Your message contains blacklisted words' });
 
+    const type = 'reply'
+
     try {
         const newMessage = new Message({
             streamId,
@@ -98,6 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             profile,
             timestamp,
             reactions,
+            repliedMessage
         });
 
         const data = await newMessage.save();
@@ -112,11 +109,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             profile,
             timestamp,
             reactions,
+            repliedMessage
         });
 
         res.status(200).json({ status: true, message: data._id });
     } catch (error) {
         console.error(error)
-        res.status(500).json({ status: false, error: "Cannot send message" });
+        res.status(500).json({ status: false, error: "Cannot reply message" });
     }
 }
