@@ -116,18 +116,21 @@ const Player: React.FC<PlayerProps> = () => {
                 const response = await axios.get('/api/stream/stream');
                 setStreamInfo(response.data);
                 setStreamUrl(window.location.href + 'api/stream/video');
-                setLoading(false);
             } catch (error) {
-                console.error("Failed to fetch stream info", error);
-                setHasError(true);
-                setLoading(false);
+                setLoading(true);
             }
         };
 
         fetchStreamInfo();
-
-        window.location.reload();
         showToast("The stream just started.")
+        setIsClient(false)
+        setLoading(true);
+
+
+        setTimeout(() => {
+            setIsClient(true)
+            setLoading(false);
+        }, 3000)
     };
 
     const handleEndBroadcast = () => {

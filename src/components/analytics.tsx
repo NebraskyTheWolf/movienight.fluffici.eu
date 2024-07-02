@@ -31,7 +31,7 @@ const AnalyticsSection: React.FC = () => {
     useEffect(() => {
         let onlineUsers = 0;
 
-        const channel = pusher.subscribe('presence-channel');
+        const channel = pusher.subscribe('presence-chat-channel');
         channel.bind('pusher:subscription_succeeded', (members: any) => {
             onlineUsers = members.count;
         });
@@ -46,25 +46,33 @@ const AnalyticsSection: React.FC = () => {
 
         const updateChartData = () => {
             const now = new Date();
+            setChartData((prev) => {
+                const newLabels = [...prev.labels || [], now];
+                const newData = [...prev.datasets[0].data, onlineUsers];
 
-            setChartData((prev) => ({
-                ...prev,
-                labels: [...prev.labels || [], now],
-                datasets: [
-                    {
-                        ...prev.datasets[0],
-                        data: [...prev.datasets[0].data, onlineUsers],
-                    },
-                ],
-            }));
+                if (newLabels.length > 20) {
+                    newLabels.shift();
+                    newData.shift();
+                }
 
-            setMetrics({
+                return {
+                    ...prev,
+                    labels: newLabels,
+                    datasets: [
+                        {
+                            ...prev.datasets[0],
+                            data: newData,
+                        },
+                    ],
+                };
+            });
+
+            setMetrics((prevMetrics) => ({
+                ...prevMetrics,
                 totalViewers: onlineUsers,
-                totalStreams: 0
-            })
+            }));
         };
 
-        // Fetch initial data
         const fetchInitialData = async () => {
             try {
                 const response = await axios.get('/api/analytics/initial-data');
@@ -77,8 +85,7 @@ const AnalyticsSection: React.FC = () => {
 
         fetchInitialData();
 
-        // Set up interval to update chart data every 60 seconds
-        const intervalId = setInterval(updateChartData, 10000);
+        const intervalId = setInterval(updateChartData, 2000);
 
         return () => {
             pusher.unsubscribe('presence-channel');
@@ -93,7 +100,7 @@ const AnalyticsSection: React.FC = () => {
             x: {
                 type: 'time',
                 time: {
-                    unit: 'minute',
+                    unit: 'second',
                 },
             },
             y: {
@@ -106,8 +113,8 @@ const AnalyticsSection: React.FC = () => {
             autoPadding: true
         },
         animation: {
-            loop: true,
-            duration: 1.5
+            loop: false,
+            duration: 1000,
         },
         locale: 'cs',
         elements: {
@@ -122,11 +129,10 @@ const AnalyticsSection: React.FC = () => {
             <h2 className="text-2xl font-bold mb-4">Analytics</h2>
             <div className="mb-4">
                 <p>Total Viewers: {metrics.totalViewers}</p>
-                <p>Total Streams: {metrics.totalStreams}</p>
             </div>
             <div className="bg-gray-700 p-4 rounded-lg shadow-md" style={{ width: '100%', overflowX: 'auto' }}>
                 <h3 className="text-xl font-semibold mb-4">Real-time Viewers</h3>
-                <div style={{ width: '1400px', height: '400px', color: '#fff' }}>
+                <div style={{ width: '1200px', height: '400px', color: '#fff' }}>
                     <Line data={chartData} options={options} />
                 </div>
             </div>
