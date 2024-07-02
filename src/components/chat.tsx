@@ -214,6 +214,10 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         try {
             let result: Message;
             if (content.startsWith('/')) {
+                if (!slashCommandManager.findCommand(content)) {
+                    showToast("This command does not exists, use /help", "error")
+                    return
+                }
                 result = slashCommandManager.executeCommand(content);
                 type = 'bot'
             } else {
@@ -481,7 +485,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                             {messages.map((message) => (
                                 <div
                                     key={message._id}
-                                    className={`p-2 ${message.type === 'system' ? 'text-center' : 'border-b border-gray-700'}`}
+                                    className={`p-2 ${message.type === 'system' ? 'text-center' : 'border-b border-gray-700'} hover:bg-gray-800`}
                                     onContextMenu={(e) => handleContextMenu(e, message, message.type)}
                                 >
                                     <div className="group relative">
@@ -509,12 +513,10 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                         </div>
                                     )}
                                     {message.type === 'system' ? (
-                                        <>
-                                            <div className="flex space-x-3 items-center justify-center">
-                                                <FaCog />
-                                                <div>{message.content}</div>
-                                            </div>
-                                        </>
+                                        <div className="flex space-x-3 items-center justify-center">
+                                            <FaCog />
+                                            <div>{message.content}</div>
+                                        </div>
                                     ) : message.type === 'gif' ? (
                                         <div>
                                             <img
@@ -609,19 +611,21 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                 )}
                             </div>
                             {commandSuggestions.length > 0 && (
-                                <div className="absolute bg-gray-900 p-2 shadow-lg rounded-md">
-                                    {commandSuggestions.map((suggestion, index) => (
-                                        <div key={index} className="cursor-pointer">
-                                            <span className="suggestion-name">/{suggestion.name}</span>
-                                            <span className="suggestion-description">{suggestion.description}</span>
-                                        </div>
-                                    ))}
+                                <div className="absolute bottom-16 left-0 w-full bg-gray-800 p-4 shadow-lg rounded-md z-50">
+                                    <div className="flex flex-col space-y-2">
+                                        {commandSuggestions.map((suggestion, index) => (
+                                            <div key={index} className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md">
+                                                <span className="text-white font-semibold">/{suggestion.name}</span>
+                                                <span className="text-gray-400 text-sm">{suggestion.description}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                     {commandOptions.length > 0 && (
-                                        <div className="command-options">
+                                        <div className="mt-2 border-t border-gray-700 pt-2">
                                             {commandOptions.map((option, index) => (
-                                                <div key={index} className="command-option">
-                                                    <span className="option-name">{option.name}</span>
-                                                    <span className="option-description">{option.description}</span>
+                                                <div key={index} className="flex justify-between p-2 hover:bg-gray-700 rounded-md">
+                                                    <span className="text-white">{option.name}</span>
+                                                    <span className="text-gray-400 text-sm">{option.description}</span>
                                                 </div>
                                             ))}
                                         </div>
