@@ -59,54 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (type !== "user" && type !== "gif") {
         return res.status(400).json({ error: 'Invalid message type' });
-    } else if (type == "bot") {
-        const message: CMessage = req.body.message
-        const { content, embeds } = message;
-
-        const user: User = {
-            id: '1090193884782526525',
-            name: 'FluffBOT',
-            image: 'https://cdn.discordapp.com/app-icons/1090193884782526525/1aed19e69224aeb09df782a3285e5e6a.png',
-            email: 'fluffbot@fluffici.eu'
-        }
-
-        const profile: IProfile = {
-            discordId: '1090193884782526525',
-            permissions: 0,
-            streamKey: 'null',
-            flags: 32,
-            sanction: {}
-        }
-
-        const newMessage = new Message({
-            streamId,
-            content,
-            type,
-            user,
-            profile,
-            timestamp,
-            reactions,
-            embeds
-        });
-
-        const data = await newMessage.save();
-
-        const id = data._id;
-
-        await pusher.trigger('presence-chat-channel', 'new-message', {
-            id,
-            content,
-            type,
-            user,
-            profile,
-            timestamp,
-            reactions,
-        });
-
-        return res.status(200).json({ status: true, message: data._id });
     }
-
-
 
     try {
         const newMessage = new Message({

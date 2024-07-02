@@ -1,3 +1,5 @@
+"use server"
+
 import Pusher from "pusher";
 
 const pusherServer = new Pusher({

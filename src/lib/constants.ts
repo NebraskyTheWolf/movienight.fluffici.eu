@@ -14,7 +14,8 @@ export const CHAT_PERMISSION = {
     REPLY_MESSAGE: 1 << 11,
 
     PUBLISH_STREAM: 1 << 12,
-    JOIN_PRESENCE: 1 << 13
+    JOIN_PRESENCE: 1 << 13,
+    USE_COMMAND: 1 << 14
 };
 
 export const USER_FLAGS = {

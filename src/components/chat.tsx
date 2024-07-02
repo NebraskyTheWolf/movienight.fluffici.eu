@@ -28,14 +28,17 @@ import {
 import { Button } from "@/components/button.tsx";
 import { IProfile } from "@/models/Profile.ts";
 import { IMessage } from "@/models/Message.ts";
-import {FaBots, FaFaceSmile, FaMessage, FaShield} from 'react-icons/fa6';
+import {FaBots, FaFaceSmile, FaMessage, FaRobot, FaShield} from 'react-icons/fa6';
 import pusher from "@/lib/pusher.ts";
 import ExternalRedirect from './redirect';
 import { Embed } from './embed';
 import SlashCommandManager from "@/lib/SlashCommandManager.ts";
-import {ApplicationCommandOption, Message} from '../lib/types';
+import {ApplicationCommandOption, Message, SlashCommand} from '../lib/types';
 import EmbedMessage from './EmbedMessage';
 import registerCommands from "@/lib/CommandRegistry.ts";
+import {getEmojiDataFromNative} from "emoji-mart";
+import {User} from "next-auth";
+import {hasPermissions} from "@/lib/permission.ts";
 
 const CHANNEL_NAME = 'presence-chat-channel';
 const NEW_MESSAGE_EVENT = 'new-message';
@@ -57,6 +60,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     const [showBanDialog, setShowBanDialog] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [messages, setMessages] = useState<IMessage[]>([]);
+    const [commands, setCommands] = useState<SlashCommand[]>([]);
     const [content, setContent] = useState<string>('');
     const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
     const [replyTo, setReplyTo] = useState<IMessage | null>(null);
@@ -70,12 +74,10 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     const [commandSuggestions, setCommandSuggestions] = useState<{ name: string; description: string }[]>([]);
     const [commandOptions, setCommandOptions] = useState<ApplicationCommandOption[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [activeMessage, setActiveMessage] = useState<IMessage | null>();
     const { data: session, status, update } = useSession();
 
     const user = session?.user;
-
-    const slashCommandManager = new SlashCommandManager();
-    registerCommands(slashCommandManager)
 
     // @ts-ignore
     const HighlightUserMention = ({ user, message }) => {
@@ -114,6 +116,13 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             } catch (error) { }
         }
 
+        const fetchCommands = async () => {
+            try {
+                const response = await axios.get('/api/chat/command');
+                setCommands(response.data.commands)
+            } catch (error) { }
+        }
+
         const isBanned = async () => {
             try {
                 const response = await axios.get('/api/chat/is-banned');
@@ -126,6 +135,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             sendSystemMessage();
         }
 
+        fetchCommands()
         fetchMessages();
         fetchProfile();
         isBanned();
@@ -203,6 +213,18 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         };
     }, [session, user, update]);
 
+    const handleCommand = async (command: { name: string; description: string }) => {
+        const response = await axios.post(`/api/chat/command`, { command: command.name });
+
+        if (!response.data.status) {
+            showToast(response.data.error, "error")
+        }
+
+        setContent('');
+        setReplyTo(null);
+        setCommandSuggestions([])
+    }
+
     const handleSendMessage = useCallback(async (type: 'user' | 'system' | 'bot' = 'user') => {
         if (!user) {
             showToast("Please log in to send messages", "error");
@@ -212,33 +234,16 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         if (content.length <= 0) return;
 
         try {
-            let result: Message;
-            if (content.startsWith('/')) {
-                if (!slashCommandManager.findCommand(content)) {
-                    showToast("This command does not exists, use /help", "error")
-                    return
-                }
-                result = slashCommandManager.executeCommand(content);
-                type = 'bot'
-            } else {
-                result = { content };
-            }
+            let result: Message = { content };
+            await axios.post(`/api/chat/send-message`, { content: result.content, type });
+            setMessages(prevMessages => [...prevMessages, result as IMessage]);
 
-            if (!result.ephemeral) {
-                if (type == 'bot') {
-                    await axios.post(`/api/chat/send-message`, { message: result, type });
-                    setMessages(prevMessages => [...prevMessages, result as IMessage]);
-                } else {
-                    await axios.post(`/api/chat/send-message`, { content: result.content, type });
-                    setMessages(prevMessages => [...prevMessages, result as IMessage]);
-                }
-            }
             setContent('');
             setReplyTo(null);
         } catch (error) {
             showToast("Failed to send message", "error");
         }
-    }, [content, user, slashCommandManager]);
+    }, [content, user]);
 
     const handleSendGif = useCallback(async (gifUrl: TenorImage) => {
         if (!user) {
@@ -267,6 +272,13 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             },
         });
     };
+
+    const findCommand = (query: string) =>  {
+        return commands.filter(command =>
+            command.name.startsWith(query) &&
+            hasPermissions(session?.profile.permissions! || 0, command.permissions || 0)
+        );
+    }
 
     const handleDeleteMessage = async (messageId: string) => {
         try {
@@ -330,7 +342,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         if (flags & USER_FLAGS.VIEWER) badges.push(<FaUser className="text-cyan-400" key="viewer" />);
         if (flags & USER_FLAGS.MODERATOR) badges.push(<FaShield className="text-red-500" key="moderator" />);
         if (flags & USER_FLAGS.HOST) badges.push(<FaCrown className="text-yellow-200" key="host" />);
-        if (flags & USER_FLAGS.BOT) badges.push(<FaBots className="text-green-400" key="bot" />);
+        if (flags & USER_FLAGS.BOT) badges.push(<FaRobot className="text-green-400" key="bot" />);
         return badges;
     };
 
@@ -339,11 +351,8 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     };
 
     const handleEmojiClick = (emojiObject: any, event: any) => {
-        if (inputRef.current) {
-            const cursorPosition = inputRef.current.selectionStart;
-            const newText = content.slice(0, cursorPosition!) + emojiObject.emoji + content.slice(cursorPosition!);
-            setContent(newText);
-        }
+        setContent(emojiObject.native);
+        setShowEmojiPicker(false)
     };
 
     const handleEmojiInput = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -352,7 +361,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
         if (value.startsWith('/')) {
             const query = value.slice(1);
-            const suggestions = slashCommandManager.findCommand(query);
+            const suggestions = findCommand(query);
             setCommandSuggestions(suggestions);
             if (suggestions.length === 1) {
                 setCommandOptions(suggestions[0].options || []);
@@ -399,9 +408,9 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
     };
 
-    const renderEmojiReactions = (reactions: { emoji: string, users: any[] }[] = []) => {
+    const renderEmojiReactions = (reactions: { emoji: string, users: User[] }[] = []) => {
         return reactions.map(reaction => (
-            <div key={reaction.emoji} className="flex items-center mt-2">
+            <div key={reaction.emoji} className="flex items-center mt-2" onClick={() => handleReactionClick(reaction.emoji)}>
                 <span dangerouslySetInnerHTML={{ __html: reaction.emoji }} />
                 <span className="ml-1">{reaction.users.length}</span>
                 <div className="flex -space-x-2 ml-2">
@@ -409,23 +418,13 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                         <img
                             key={user.id}
                             src={getAvatarsIconUrl(user)}
-                            alt={user.name}
+                            alt={user.name!}
                             className="w-6 h-6 rounded-full border-2 border-white"
                         />
                     ))}
                 </div>
             </div>
         ));
-    };
-
-    const handleGifHover = (event: React.MouseEvent<HTMLImageElement, MouseEvent>) => {
-        const target = event.target as HTMLImageElement;
-        target.src = target.dataset.gif as string;
-    };
-
-    const handleGifLeave = (event: React.MouseEvent<HTMLImageElement, MouseEvent>) => {
-        const target = event.target as HTMLImageElement;
-        target.src = target.dataset.still as string;
     };
 
     const handleMentionSearch = (query: string) => {
@@ -440,6 +439,33 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     const detectUrls = (message: string) => {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         return message.match(urlRegex);
+    };
+
+    const handleReactionClick = (emojiObject: any) => {
+        if (activeMessage) {
+            const emoji = emojiObject;
+            const updatedMessage = { ...activeMessage };
+            const reactionIndex = updatedMessage.reactions.findIndex((r: { emoji: any; }) => r.emoji === emoji);
+
+            if (reactionIndex !== -1) {
+                const userIndex = updatedMessage.reactions[reactionIndex].users.findIndex((u: { id: string; }) => u.id === user?.id);
+                if (userIndex === -1) {
+                    updatedMessage.reactions[reactionIndex].users.push(user!);
+                } else {
+                    updatedMessage.reactions[reactionIndex].users.splice(userIndex, 1);
+                }
+            } else {
+                updatedMessage.reactions = [...(updatedMessage.reactions || []), { emoji, users: [user!] }];
+            }
+
+            setMessages(prevMessages =>
+                prevMessages.map(msg => msg._id === updatedMessage._id ? updatedMessage : msg)
+            );
+
+            axios.post('/api/chat/react-message', { messageId: activeMessage._id, user, emoji });
+            setShowEmojiPicker(false);
+            setActiveMessage(null)
+        }
     };
 
     return (
@@ -485,10 +511,10 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                             {messages.map((message) => (
                                 <div
                                     key={message._id}
-                                    className={`p-2 ${message.type === 'system' ? 'text-center' : 'border-b border-gray-700'} hover:bg-gray-800`}
+                                    className={`p-2 ${message.type === 'system' ? 'text-center' : 'border-b border-gray-700'} hover:bg-gray-800 group`}
                                     onContextMenu={(e) => handleContextMenu(e, message, message.type)}
                                 >
-                                    <div className="group relative">
+                                    <div className="relative">
                                         <div className="absolute hidden group-hover:flex items-center right-0 top-0 space-x-2">
                                             <button className="p-1" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                                                 <FaSmile />
@@ -522,22 +548,36 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                             <img
                                                 src={message.content}
                                                 data-gif={message.content}
-                                                onMouseOver={handleGifHover}
-                                                onMouseLeave={handleGifLeave}
                                                 className="rounded cursor-pointer"
                                                 alt="GIF"
                                             />
                                         </div>
                                     ) : message.type === 'bot' ? (
-                                        <div>
-                                            {message.embeds && message.embeds.map((embed, i) => (
-                                                <EmbedMessage key={i} embed={embed} />
-                                            ))}
+                                        <div className="relative pl-12">
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <img
+                                                    src={getAvatarsIconUrl(message.author)}
+                                                    alt={message.author!.id}
+                                                    className="w-8 h-8 rounded-full cursor-pointer"
+                                                    onClick={() => handleUserClick(message.author)}
+                                                />
+                                                <span className="font-bold text-indigo-500 cursor-pointer" onClick={() => handleUserClick(message.author)}>
+                                                    {message.author!.name}
+                                                </span>
+                                                <span className="text-gray-400">used</span>
+                                                <span className="bg-blue-600 text-white px-2 py-1 rounded">{message.command}</span>
+                                            </div>
+                                            <div className="ml-10 relative">
+                                                <div className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
+                                                {message.embeds && message.embeds.map((embed, i) => (
+                                                    <EmbedMessage key={i} embed={embed} />
+                                                ))}
+                                            </div>
                                         </div>
                                     ) : (
                                         <div>
                                             <HighlightUserMention user={{ name: user?.name }} message={{ content: message.content }} />
-                                            {detectUrls(message.content)?.map((url) => (
+                                            {detectUrls(message.content!)?.map((url) => (
                                                 <Embed url={url} key={url} />
                                             ))}
                                         </div>
@@ -614,7 +654,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                 <div className="absolute bottom-16 left-0 w-full bg-gray-800 p-4 shadow-lg rounded-md z-50">
                                     <div className="flex flex-col space-y-2">
                                         {commandSuggestions.map((suggestion, index) => (
-                                            <div key={index} className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md">
+                                            <div key={index} className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md" onClick={(e) => handleCommand(suggestion)}>
                                                 <span className="text-white font-semibold">/{suggestion.name}</span>
                                                 <span className="text-gray-400 text-sm">{suggestion.description}</span>
                                             </div>
@@ -633,16 +673,15 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                 </div>
                             )}
                             {emojiSuggestions.length > 0 && (
-                                <div className="absolute bg-gray-900 p-2 shadow-lg rounded-md">
-                                    {emojiSuggestions.map(emoji => (
-                                        <div
-                                            key={emoji}
-                                            className="cursor-pointer"
-                                            onClick={() => handleEmojiSuggestionClick(emoji)}
-                                        >
-                                            {emoji}
-                                        </div>
-                                    ))}
+                                <div className="absolute bottom-16 left-0 w-full bg-gray-800 p-4 shadow-lg rounded-md z-50">
+                                    <div className="flex flex-col space-y-2">
+                                        {emojiSuggestions.map((emoji, index) => (
+                                            <div key={index} className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md" onClick={(e) => handleEmojiSuggestionClick(emoji)}>
+                                                <span className="text-white font-semibold">{emoji}</span>
+                                                <span className="text-gray-400 text-sm"></span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -1,3 +1,5 @@
+"use server"
+
 import { SlashCommand, ApplicationCommandOption, Message } from './types';
 
 class SlashCommandManager {
@@ -23,7 +25,7 @@ class SlashCommandManager {
 
     executeCommand(input: string): Message {
         const args = input.split(' ');
-        const commandName = args.shift()?.slice(1);
+        const commandName = args.shift();
 
         if (!commandName || !this.commands.has(commandName)) {
             return { content: `Command "${commandName}" not found.`, ephemeral: true };
@@ -63,6 +65,7 @@ class SlashCommandManager {
             name: command.name,
             description: command.description,
             options: command.options || [],
+            permissions: command.permissions || 0
         }));
     }
 
@@ -70,6 +73,22 @@ class SlashCommandManager {
         return this.listCommands().filter(command =>
             command.name.startsWith(query)
         );
+    }
+
+    getCommand(query: string): SlashCommand {
+        let commands = Array.from(this.commands.values()).filter(command =>
+            command.name.startsWith(query)
+        );
+
+        if (commands.length > 0) {
+            return commands[0];
+        } else {
+            throw new Error('Command not found');
+        }
+    }
+
+    hasCommand(query: string) {
+        return this.commands.has(query)
     }
 }
 

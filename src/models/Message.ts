@@ -32,9 +32,9 @@ const EmbedThumbnail: Schema = new Schema({
 
 
 const EmbedField: Schema = new Schema({
-    url: { type: String, required: true },
-    value: { type: String, required: true },
-    inline: { type: String, required: false, default: false }
+    name: { type: String },
+    value: { type: String },
+    inline: { type: String, default: false }
 })
 
 const EmbedImage: Schema = new Schema({
@@ -48,7 +48,7 @@ const EmbedFooter: Schema = new Schema({
 })
 
 const EmbedMessage: Schema = new Schema({
-    color: { type: Number, required: true },
+    color: { type: String, required: true },
     title: { type: String, required: false },
     url: { type: String, required: false },
     author: { type: EmbedAuthor, required: false },
@@ -63,19 +63,21 @@ const EmbedMessage: Schema = new Schema({
 export interface IMessage {
     _id: string;
     streamId: string;
-    content: string;
+    content?: string;
+    command?: string;
     type: 'user' | 'system' | 'gif' | 'bot';
     user: User;
+    author?: User;
     profile: IProfile;
     timestamp: number;
     reactions: Reaction[];
-    embeds: EmbedMessage[];
+    embeds?: EmbedMessage[];
 }
 
 const UserSchema: Schema = new Schema({
-    id: { type: String, required: true },
-    name: { type: String, required: true },
-    image: { type: String, required: true },
+    id: { type: String },
+    name: { type: String },
+    image: { type: String },
 });
 
 const ProfileSchema: Schema = new Schema({
@@ -117,9 +119,11 @@ const ReactionSchema: Schema = new Schema({
 
 const MessageSchema: Schema = new Schema({
     streamId: { type: String, required: true },
-    content: { type: String, required: true },
-    type: { type: String, enum: ['user', 'system'], required: true },
+    content: { type: String, required: false },
+    command: { type: String, required: false },
+    type: { type: String, enum: ['user', 'system', 'gif', 'bot'], required: true },
     user: { type: UserSchema, required: true },
+    author: { type: UserSchema, required: false },
     profile: { type: ProfileSchema, required: true },
     timestamp: { type: Number, required: true },
     reactions: { type: [ReactionSchema], default: [] },

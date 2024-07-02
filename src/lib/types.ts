@@ -29,7 +29,7 @@ export interface ApplicationCommandOption {
 }
 
 export interface EmbedMessage {
-    color: number;
+    color: string;
     title?: string;
     url?: string;
     author?: {
@@ -67,4 +67,5 @@ export interface SlashCommand {
     description: string;
     options?: ApplicationCommandOption[];
     execute: (args: any) => Message;
+    permissions?: number;
 }

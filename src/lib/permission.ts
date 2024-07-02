@@ -12,6 +12,12 @@ export function addPermission(currentPermissions: Bitfield, permissionToAdd: Bit
     return currentPermissions | permissionToAdd;
 }
 
+export function addPermissions(...permissionToAdd: number[]): number {
+    let currentPermissions = 0;
+    permissionToAdd.forEach(value => currentPermissions = currentPermissions | value)
+    return currentPermissions;
+}
+
 /**
  * Removes a permission from the current permissions.
  *
@@ -22,4 +28,9 @@ export function addPermission(currentPermissions: Bitfield, permissionToAdd: Bit
  */
 export function removePermission(currentPermissions: Bitfield, permissionToRemove: Bitfield): number {
     return currentPermissions & ~permissionToRemove;
+}
+
+
+export function hasPermissions(userPermissions: number, requiredPermissions: number): boolean {
+    return (userPermissions & requiredPermissions) === requiredPermissions;
 }
