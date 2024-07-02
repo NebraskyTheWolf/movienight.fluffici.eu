@@ -5,10 +5,6 @@ import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getServerSession(req, res, authOptions);
-    if (!session)
-        return res.status(401).json({ error: 'Unauthorized' });
-
     try {
         await connectToDatabase();
         const stream = await Stream.findOne({});

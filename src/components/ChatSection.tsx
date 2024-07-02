@@ -31,8 +31,7 @@ const ChatSection: React.FC = () => {
         const fetchChatSettings = async () => {
             try {
                 const response = await axios.get('/api/chat/settings');
-                const decodedSettings = decodeFromBase64<ChatSettings>(response.data.settings);
-                setSettings(decodedSettings);
+                setSettings(response.data.settings);
             } catch (error) {
                 showToast("Failed to fetch chat settings", "error")
             } finally {
@@ -108,8 +107,7 @@ const ChatSection: React.FC = () => {
     const saveSettings = async () => {
         setSaving(true);
         try {
-            const encodedSettings = encodeToBase64<string>(JSON.stringify(settings));
-            await axios.get(`/api/chat/settings?q=${encodedSettings}`);
+            await axios.post(`/api/chat/settings`, { settings });
             showToast("Chat settings saved!", "success")
         } catch (error) {
             showToast("Failed to update settings", "error")

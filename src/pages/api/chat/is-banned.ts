@@ -28,10 +28,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await connectToDatabase()
 
     const requestingUser = await Profile.findOne({ discordId: session.user.id });
-
-    if (!requestingUser) {
+    if (!requestingUser)
         return res.status(403).json({ error: 'User is not authorized' });
-    }
 
     try {
         if (requestingUser.permissions == 0) {

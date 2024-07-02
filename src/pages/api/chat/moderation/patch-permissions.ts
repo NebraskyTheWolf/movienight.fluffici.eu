@@ -6,7 +6,7 @@ import Message from "@/models/Message.ts";
 import {hasPermission} from "@/lib/utils.ts";
 import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
-import {removePermission} from "@/lib/permission.ts";
+import {addPermission, removePermission} from "@/lib/permission.ts";
 import {v4} from "uuid";
 import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
@@ -42,19 +42,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { id, permissions } = req.body;
 
     const requestingUser = await Profile.findOne({ discordId: session.user.id });
-    const targetUser = await Profile.findOne({ discordId: id});
+    const targetUser = await Profile.findOne({ discordId: id });
+
+    if (!targetUser) {
+        return res.status(404).json({ status: false, error: 'User not found' });
+    }
 
     if (!requestingUser || !hasPermission(requestingUser, CHAT_PERMISSION.ADMINISTRATOR)) {
         return res.status(403).json({ status: false, error: 'Forbidden' });
-    } else if (!targetUser || hasPermission(targetUser, CHAT_PERMISSION.ADMINISTRATOR)) {
-        return res.status(403).json({ status: false, error: 'Cannot mute a administrator' });
     } else if (targetUser.permissions > requestingUser.permissions) {
         return res.status(403).json({ status: false, error: 'This user has bigger authority than yours' });
     }
 
     await Profile.updateOne({ _id: targetUser._id }, {
         $set: {
-            permissions: permissions
+            permissions: addPermission(targetUser.permissions, permissions)
         }
     })
 
@@ -63,6 +65,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         res.status(200).json({ status: true });
     } catch (error) {
-        res.status(500).json({ status: false, error: 'Error muting user' });
+        res.status(500).json({ status: false, error: 'Error patching user' });
     }
 }

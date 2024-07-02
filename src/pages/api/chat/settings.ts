@@ -1,8 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import ChatSettings, {IChatSettings} from '@/models/ChatSettings';
 import connectToDatabase from "@/lib/mongodb.ts";
-import {decodeFromBase64, encodeToBase64} from "next/dist/build/webpack/loaders/utils";
-import {getSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
 import {getServerSession} from "next-auth";
@@ -21,21 +19,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'GET') {
         try {
-            const { q } = req.query;
+            const settings = await ChatSettings.findOne({ _id: '668348b752dc60219a0aa9fe' });
+            res.status(200).json({ settings: settings });
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false });
+        }
+    } else if (req.method === 'POST') {
+        const { settings } = req.body
 
-            if (q) {
-                const decoded = decodeFromBase64<string>(<string>q)
+        if (!settings) {
+            return res.status(400).json({ success: false, message: 'Invalid request' });
+        }
 
-                const settings = await ChatSettings.findOneAndUpdate({ _id: '668348b752dc60219a0aa9fe' }, JSON.parse(JSON.stringify(decoded)), {
-                    new: true,
-                    upsert: true,
-                });
-                res.status(200).json(settings);
-            } else {
-                const settings = await ChatSettings.findOne({});
-                const encoded = encodeToBase64(settings!);
-                res.status(200).json({ settings: encoded });
-            }
+        try {
+            const handleSettings = await ChatSettings.findOneAndUpdate({ _id: '668348b752dc60219a0aa9fe' }, settings, {
+                new: true,
+                upsert: true,
+            });
+
+            res.status(200).json({ settings: handleSettings });
         } catch (error) {
             console.log(error)
             res.status(400).json({ success: false });

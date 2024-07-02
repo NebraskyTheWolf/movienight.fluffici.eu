@@ -12,6 +12,7 @@ import { Message as CMessage } from '@/lib/types.ts'
 import message from "@/models/Message.ts";
 import EmbedMessage from "@/components/EmbedMessage.tsx";
 import {IProfile} from "@/models/Profile.ts";
+import ChatSettings from "@/models/ChatSettings.ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -60,6 +61,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (type !== "user" && type !== "gif") {
         return res.status(400).json({ error: 'Invalid message type' });
     }
+
+    const chatSettings = await ChatSettings.findOne({ _id: '668348b752dc60219a0aa9fe' })
+
+    let isContentBlacklisted = false;
+    if (chatSettings) {
+        if (!chatSettings.enableChat)
+            return res.status(403).json({ error: 'The chat was disabled by a administrator' });
+
+        chatSettings.autoModeration.blacklist.forEach(value => {
+            if (content.includes(value))
+                isContentBlacklisted = true
+        })
+
+        chatSettings.autoModeration.regexPatterns.forEach(pattern => {
+            if (content.match(pattern))
+                isContentBlacklisted = true
+        })
+    }
+
+    if (isContentBlacklisted)
+        return res.status(403).json({ error: 'Your message contains blacklisted words' });
 
     try {
         const newMessage = new Message({
