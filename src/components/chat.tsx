@@ -5,7 +5,9 @@ import { Item, Menu, useContextMenu } from "react-contexify";
 import "react-contexify/dist/ReactContexify.css";
 import axios from 'axios';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import Pusher from 'pusher-js';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
+import GifPicker, { ContentFilter, TenorImage, Theme } from 'gif-picker-react';
 import { CHAT_PERMISSION, USER_FLAGS } from '../lib/constants';
 import { getAvatarsIconUrl, hasPermission } from '../lib/utils';
 import { showToast } from "@/components/toast";
@@ -24,16 +26,16 @@ import {
     FaUserLock
 } from "react-icons/fa";
 import { Button } from "@/components/button.tsx";
-import EmojiPicker from 'emoji-picker-react';
 import { IProfile } from "@/models/Profile.ts";
 import { IMessage } from "@/models/Message.ts";
-import { Rnd } from "react-rnd";
-import { GiphyFetch } from "@giphy/js-fetch-api";
-import { Grid } from "@giphy/react-components";
-import { FaFaceSmile, FaMessage, FaShield } from 'react-icons/fa6';
+import {FaBots, FaFaceSmile, FaMessage, FaShield} from 'react-icons/fa6';
 import pusher from "@/lib/pusher.ts";
 import ExternalRedirect from './redirect';
 import { Embed } from './embed';
+import SlashCommandManager from "@/lib/SlashCommandManager.ts";
+import {ApplicationCommandOption, Message} from '../lib/types';
+import EmbedMessage from './EmbedMessage';
+import registerCommands from "@/lib/CommandRegistry.ts";
 
 const CHANNEL_NAME = 'presence-chat-channel';
 const NEW_MESSAGE_EVENT = 'new-message';
@@ -42,17 +44,18 @@ const DELETE_MESSAGE_EVENT = 'delete-message';
 const PERMISSION_CHANGED_EVENT = 'permission_changed';
 const USER_MUTED_EVENT = 'user-muted';
 const BANNED_USER_EVENT = 'banned-user';
+
 interface ChatProps {
     streamId?: string;
     isOverlay?: boolean;
 }
 
 const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [externalUrl , setExternalUrl ] = useState<string>("")
-    const [reason, setReason] = useState<string>("")
-    const [showBanDialog, setShowBanDialog] = useState<boolean>(false)
-    const [isLoading, setIsLoading] = useState<boolean>(true)
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [externalUrl, setExternalUrl] = useState<string>("");
+    const [reason, setReason] = useState<string>("");
+    const [showBanDialog, setShowBanDialog] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [messages, setMessages] = useState<IMessage[]>([]);
     const [content, setContent] = useState<string>('');
     const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
@@ -64,10 +67,15 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     const [emojiSuggestions, setEmojiSuggestions] = useState<string[]>([]);
     const [showGifPicker, setShowGifPicker] = useState<boolean>(false);
     const [users, setUsers] = useState<any[]>([]);
+    const [commandSuggestions, setCommandSuggestions] = useState<{ name: string; description: string }[]>([]);
+    const [commandOptions, setCommandOptions] = useState<ApplicationCommandOption[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
     const { data: session, status, update } = useSession();
 
     const user = session?.user;
+
+    const slashCommandManager = new SlashCommandManager();
+    registerCommands(slashCommandManager)
 
     // @ts-ignore
     const HighlightUserMention = ({ user, message }) => {
@@ -89,8 +97,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             try {
                 const response = await axios.get('/api/chat/messages-ack');
                 setMessages(response.data.messages);
-
-                setIsLoading(false)
+                setIsLoading(false);
             } catch (error) { }
         };
 
@@ -110,8 +117,8 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         const isBanned = async () => {
             try {
                 const response = await axios.get('/api/chat/is-banned');
-                setWarningMessage(`You have been banned for breaking the rules.`)
-                setShowWarning(response.data.status)
+                setWarningMessage(`You have been banned for breaking the rules.`);
+                setShowWarning(response.data.status);
             } catch (error) { }
         }
 
@@ -120,8 +127,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
 
         fetchMessages();
-        fetchProfile()
-
+        fetchProfile();
         isBanned();
     }, [session, user, update]);
 
@@ -197,33 +203,47 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         };
     }, [session, user, update]);
 
-    const handleSendMessage = useCallback(async (type: 'user' | 'system' = 'user') => {
+    const handleSendMessage = useCallback(async (type: 'user' | 'system' | 'bot' = 'user') => {
         if (!user) {
             showToast("Please log in to send messages", "error");
             return;
         }
 
-        // Safe guard against empty message ( client-side )
-        if (content.length <= 0)
-            return
+        if (content.length <= 0) return;
 
         try {
-            await axios.post(`/api/chat/send-message`, { content, type });
+            let result: Message;
+            if (content.startsWith('/')) {
+                result = slashCommandManager.executeCommand(content);
+                type = 'bot'
+            } else {
+                result = { content };
+            }
+
+            if (!result.ephemeral) {
+                if (type == 'bot') {
+                    await axios.post(`/api/chat/send-message`, { message: result, type });
+                    setMessages(prevMessages => [...prevMessages, result as IMessage]);
+                } else {
+                    await axios.post(`/api/chat/send-message`, { content: result.content, type });
+                    setMessages(prevMessages => [...prevMessages, result as IMessage]);
+                }
+            }
             setContent('');
             setReplyTo(null);
         } catch (error) {
             showToast("Failed to send message", "error");
         }
-    }, [content, user]);
+    }, [content, user, slashCommandManager]);
 
-    const handleSendGif = useCallback(async (gifUrl: string) => {
+    const handleSendGif = useCallback(async (gifUrl: TenorImage) => {
         if (!user) {
             showToast("Please log in to send GIFs", "error");
             return;
         }
 
         try {
-            await axios.post(`/api/chat/send-message`, { content: gifUrl, type: 'gif' });
+            await axios.post(`/api/chat/send-message`, { content: gifUrl.url, type: 'gif' });
             setShowGifPicker(false);
         } catch (error) {
             showToast("Failed to send GIF", "error");
@@ -266,12 +286,12 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         try {
             const response = await axios.post(`/api/chat/moderation/mute`, { userId: message.user.id });
             if (response.data.status) {
-                showToast(`${message.user.name} has been muted`)
+                showToast(`${message.user.name} has been muted`);
             } else {
-                showToast(response.data.message, "error")
+                showToast(response.data.message, "error");
             }
         } catch (error) {
-            showToast(`A error occurred while muting ${message.user.name}`, "error")
+            showToast(`A error occurred while muting ${message.user.name}`, "error");
         }
     }
 
@@ -279,17 +299,17 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         try {
             const response = await axios.post(`/api/chat/moderation/ban`, { userId: message.user.id, reason });
             if (response.data.status) {
-                showToast(`${message.user.name} has been banned for  ${reason}`)
-                setReason("")
+                showToast(`${message.user.name} has been banned for ${reason}`);
+                setReason("");
             } else {
-                showToast(response.data.message, "error")
+                showToast(response.data.message, "error");
             }
         } catch (error) {
-            showToast(`A error occurred while muting ${message.user.name}`, "error")
+            showToast(`A error occurred while muting ${message.user.name}`, "error");
         }
 
-        setReason("")
-        setShowBanDialog(false)
+        setReason("");
+        setShowBanDialog(false);
     }
 
     const handleReplyMessage = (message: IMessage) => {
@@ -306,6 +326,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         if (flags & USER_FLAGS.VIEWER) badges.push(<FaUser className="text-cyan-400" key="viewer" />);
         if (flags & USER_FLAGS.MODERATOR) badges.push(<FaShield className="text-red-500" key="moderator" />);
         if (flags & USER_FLAGS.HOST) badges.push(<FaCrown className="text-yellow-200" key="host" />);
+        if (flags & USER_FLAGS.BOT) badges.push(<FaBots className="text-green-400" key="bot" />);
         return badges;
     };
 
@@ -325,11 +346,24 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         const { value } = event.target;
         setContent(value);
 
+        if (value.startsWith('/')) {
+            const query = value.slice(1);
+            const suggestions = slashCommandManager.findCommand(query);
+            setCommandSuggestions(suggestions);
+            if (suggestions.length === 1) {
+                setCommandOptions(suggestions[0].options || []);
+            } else {
+                setCommandOptions([]);
+            }
+        } else {
+            setCommandSuggestions([]);
+            setCommandOptions([]);
+        }
+
         const lastColonIndex = value.lastIndexOf(':');
         if (lastColonIndex !== -1) {
             const textAfterColon = value.slice(lastColonIndex + 1);
             if (textAfterColon.length > 0) {
-                // Fetch emoji suggestions based on the text after the colon
                 const suggestions = getEmojiSuggestions(textAfterColon);
                 setEmojiSuggestions(suggestions);
             } else {
@@ -349,8 +383,6 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     };
 
     const getEmojiSuggestions = (query: string) => {
-        // You can implement this function to return emoji suggestions based on the query
-        // For simplicity, here we return an empty array
         return [];
     };
 
@@ -427,17 +459,18 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                     {isCollapsed && <FaMessage />}
                 </button>
             )}
-            <div className={`fixed ${isOverlay ? 'top-4 left-4 w-[300px] h-[400px] bg-opacity-90' : 'top-4 right-4 bottom-4 w-[calc(100%-32px)] md:w-[calc(25%-32px)] h-[calc(100%-32px)]'} bg-gray-900 text-white flex flex-col shadow-lg z-40 transition-transform transform md:translate-x-0 ${isCollapsed && !isOverlay ? 'translate-x-full md:translate-x-0' : 'translate-x-0'}`}>                <div className="flex justify-between items-center p-4 border-b border-pink-600">
-                <h2 className="text-xl font-bold">CHAT</h2>
-                {!isOverlay && (
-                    <button
-                        className="md:hidden text-white"
-                        onClick={toggleCollapse}
-                    >
-                        ×
-                    </button>
-                )}
-            </div>
+            <div className={`fixed ${isOverlay ? 'top-4 left-4 w-[600px] h-[400px] bg-opacity-90' : 'top-4 right-4 bottom-4 w-[calc(100%-32px)] md:w-[calc(25%-32px)] h-[calc(100%-32px)]'} bg-gray-900 text-white flex flex-col shadow-lg z-40 transition-transform transform md:translate-x-0 ${isCollapsed && !isOverlay ? 'translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
+                <div className="flex justify-between items-center p-4 border-b border-pink-600">
+                    <h2 className="text-xl font-bold">CHAT</h2>
+                    {!isOverlay && (
+                        <button
+                            className="md:hidden text-white"
+                            onClick={toggleCollapse}
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
                 <div className="flex-1 overflow-y-auto p-4">
                     {isLoading ? (
                         <div className="justify-center">
@@ -492,6 +525,12 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                                 className="rounded cursor-pointer"
                                                 alt="GIF"
                                             />
+                                        </div>
+                                    ) : message.type === 'bot' ? (
+                                        <div>
+                                            {message.embeds && message.embeds.map((embed, i) => (
+                                                <EmbedMessage key={i} embed={embed} />
+                                            ))}
                                         </div>
                                     ) : (
                                         <div>
@@ -552,7 +591,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                         </Button>
                                         {showEmojiPicker && (
                                             <div className="absolute bottom-16 right-4">
-                                                <EmojiPicker onEmojiClick={handleEmojiClick} />
+                                                <Picker data={data} onEmojiSelect={handleEmojiClick} />
                                             </div>
                                         )}
                                     </>
@@ -565,17 +604,32 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                 </Button>
                                 {showGifPicker && (
                                     <div className="absolute bottom-16 right-4 bg-white z-50">
-                                        <Grid
-                                            width={300}
-                                            columns={3}
-                                            fetchGifs={fetchGifs}
-                                            onGifClick={(gif: { images: { fixed_height: { url: string; }; }; }) => handleSendGif(gif.images.fixed_height.url)}
-                                        />
+                                        <GifPicker tenorApiKey={"AIzaSyBVQLYT3FONCEj_r6425suu7I5CDH4copQ"} onGifClick={handleSendGif} theme={Theme.DARK} locale="cs" contentFilter={ContentFilter.HIGH} />
                                     </div>
                                 )}
                             </div>
-                            {!isOverlay && emojiSuggestions.length > 0 && (
-                                <div className="absolute bg-white p-2 shadow-lg rounded-md">
+                            {commandSuggestions.length > 0 && (
+                                <div className="absolute bg-gray-900 p-2 shadow-lg rounded-md">
+                                    {commandSuggestions.map((suggestion, index) => (
+                                        <div key={index} className="cursor-pointer">
+                                            <span className="suggestion-name">/{suggestion.name}</span>
+                                            <span className="suggestion-description">{suggestion.description}</span>
+                                        </div>
+                                    ))}
+                                    {commandOptions.length > 0 && (
+                                        <div className="command-options">
+                                            {commandOptions.map((option, index) => (
+                                                <div key={index} className="command-option">
+                                                    <span className="option-name">{option.name}</span>
+                                                    <span className="option-description">{option.description}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {emojiSuggestions.length > 0 && (
+                                <div className="absolute bg-gray-900 p-2 shadow-lg rounded-md">
                                     {emojiSuggestions.map(emoji => (
                                         <div
                                             key={emoji}

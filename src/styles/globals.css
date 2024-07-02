@@ -21,6 +21,175 @@
   background: #393c42;
 }
 
+/* styles.css */
+
+.slash-command-handler {
+  position: relative;
+  width: 400px;
+}
+
+.output {
+  margin-bottom: 10px;
+}
+
+.input-container {
+  position: relative;
+}
+
+.input-field {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.suggestions, .command-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.suggestion, .command-option {
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.suggestion-name, .option-name {
+  font-weight: bold;
+}
+
+.suggestion:hover, .command-option:hover {
+  background: #f0f0f0;
+}
+
+.message {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f9f9f9;
+}
+
+.message.ephemeral {
+  border-color: #ffcc00;
+}
+
+.ephemeral-notice {
+  font-size: 12px;
+  color: #888;
+  margin-top: 5px;
+}
+
+.dismiss {
+  cursor: pointer;
+  color: #007bff;
+}
+
+.embed {
+  border-radius: 4px;
+  background: #2f3136;
+  color: white;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.embed-author {
+  display: flex;
+  align-items: center;
+}
+
+.embed-author-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.embed-author-name {
+  color: #00aff4;
+  text-decoration: none;
+}
+
+.embed-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.embed-title a {
+  color: #00aff4;
+  text-decoration: none;
+}
+
+.embed-description {
+  margin-top: 5px;
+}
+
+.embed-thumbnail {
+  float: right;
+  width: 80px;
+  height: 80px;
+  margin-left: 10px;
+  border-radius: 4px;
+}
+
+.embed-fields {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.embed-field {
+  margin-bottom: 10px;
+  flex: 1 1 45%;
+}
+
+.embed-field.inline {
+  flex: 1 1 22%;
+}
+
+.embed-field-name {
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.embed-field-value {
+  word-wrap: break-word;
+}
+
+.embed-image {
+  width: 100%;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.embed-timestamp {
+  font-size: 12px;
+  color: #888;
+  margin-top: 10px;
+}
+
+.embed-footer {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.embed-footer-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
 .react-player__play-icon {
   border-color: #fff transparent transparent transparent !important;
 }

@@ -20,7 +20,8 @@ export const CHAT_PERMISSION = {
 export const USER_FLAGS = {
     VIEWER: 1 << 0,
     MODERATOR: 1 << 1,
-    HOST: 1 << 2
+    HOST: 1 << 2,
+    BOT: 1 << 5
 }
 
 export const USE_GIPHY = Boolean(process.env.GIPHY_ENABLED);

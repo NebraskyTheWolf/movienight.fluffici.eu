@@ -1,5 +1,6 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 import {Sanction} from "@/models/Profile.ts";
+import {EmbedMessage} from "../lib/types.ts";
 
 interface User {
     id: string
@@ -19,15 +20,56 @@ interface Reaction {
     users: User[];
 }
 
+const EmbedAuthor: Schema = new Schema({
+    name: { type: String, required: false },
+    icon_url: { type: String, required: false },
+    url: { type: String, required: false }
+})
+
+const EmbedThumbnail: Schema = new Schema({
+    url: { type: String, required: false }
+})
+
+
+const EmbedField: Schema = new Schema({
+    url: { type: String, required: true },
+    value: { type: String, required: true },
+    inline: { type: String, required: false, default: false }
+})
+
+const EmbedImage: Schema = new Schema({
+    url: { type: String, required: false }
+})
+
+
+const EmbedFooter: Schema = new Schema({
+    text: { type: String, required: false },
+    icon_url: { type: String, required: false }
+})
+
+const EmbedMessage: Schema = new Schema({
+    color: { type: Number, required: true },
+    title: { type: String, required: false },
+    url: { type: String, required: false },
+    author: { type: EmbedAuthor, required: false },
+    description: { type: String, required: false },
+    thumbnail: { type: EmbedThumbnail, required: false, default: {} },
+    fields: { type: [EmbedField], required: false, default: [] },
+    image: { type: EmbedImage, required: false, default: {} },
+    timestamp: { type: String, required: false },
+    footer: { type: EmbedFooter, required: false, default: {} }
+});
+
 export interface IMessage {
     _id: string;
     streamId: string;
     content: string;
-    type: 'user' | 'system' | 'gif';
+    type: 'user' | 'system' | 'gif' | 'bot';
     user: User;
     profile: IProfile;
     timestamp: number;
     reactions: Reaction[];
+    embeds: EmbedMessage[];
 }
 
 const UserSchema: Schema = new Schema({
@@ -81,6 +123,7 @@ const MessageSchema: Schema = new Schema({
     profile: { type: ProfileSchema, required: true },
     timestamp: { type: Number, required: true },
     reactions: { type: [ReactionSchema], default: [] },
+    embeds: { type: [EmbedMessage], default: [] },
 });
 
 const Message: Model<IMessage> = mongoose.models.Message || mongoose.model<IMessage>('Message', MessageSchema);

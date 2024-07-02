@@ -20,10 +20,15 @@ import {throttle} from "lodash";
 import {useRouter} from "next/navigation";
 import { Resizable } from 'react-resizable';
 import { DraggableCore } from 'react-draggable';
+import SlashCommandManager from "@/lib/SlashCommandManager.ts";
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
-const Player: React.FC = () => {
+interface PlayerProps {
+
+}
+
+const Player: React.FC<PlayerProps> = () => {
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [isClient, setIsClient] = useState<boolean>(false);
     const [currentDuration, setCurrentDuration] = useState<string>();
@@ -317,7 +322,7 @@ const Player: React.FC = () => {
             </div>
             {showChat && !isFullScreen && (
                 <div className="hidden md:block w-1/4 h-full bg-gray-900">
-                    <Chat streamId={streamInfo?.streamId}/>
+                    <Chat streamId={streamInfo?.streamId} />
                 </div>
             )}
             {showOverlayChat && isFullScreen && (

@@ -4,12 +4,14 @@ import { CHAT_PERMISSION } from '@/lib/constants';
 import {hasPermission} from "@/lib/utils.ts";
 import connectToDatabase from "@/lib/mongodb.ts";
 import Message from "@/models/Message.ts";
-import {getSession} from "next-auth/react";
-import Profile from "@/models/Profile.ts";
 import Stream from "@/models/Stream.ts";
-import {decodeFromBase64} from "next/dist/build/webpack/loaders/utils";
-import {getServerSession} from "next-auth";
+import {getServerSession, User} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
+
+import { Message as CMessage } from '@/lib/types.ts'
+import message from "@/models/Message.ts";
+import EmbedMessage from "@/components/EmbedMessage.tsx";
+import {IProfile} from "@/models/Profile.ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -48,18 +50,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Forbidden' });
     }
 
-    if (type !== "user" && type !== "gif") {
-        return res.status(400).json({ error: 'Invalid message type' });
-    }
+    await connectToDatabase();
 
     const { timestamp, reactions} = {
         timestamp: Date.now(),
         reactions: []
     }
 
-    try {
-        await connectToDatabase();
+    if (type !== "user" && type !== "gif") {
+        return res.status(400).json({ error: 'Invalid message type' });
+    } else if (type == "bot") {
+        const message: CMessage = req.body.message
+        const { content, embeds } = message;
 
+        const user: User = {
+            id: '1090193884782526525',
+            name: 'FluffBOT',
+            image: 'https://cdn.discordapp.com/app-icons/1090193884782526525/1aed19e69224aeb09df782a3285e5e6a.png',
+            email: 'fluffbot@fluffici.eu'
+        }
+
+        const profile: IProfile = {
+            discordId: '1090193884782526525',
+            permissions: 0,
+            streamKey: 'null',
+            flags: 32,
+            sanction: {}
+        }
+
+        const newMessage = new Message({
+            streamId,
+            content,
+            type,
+            user,
+            profile,
+            timestamp,
+            reactions,
+            embeds
+        });
+
+        const data = await newMessage.save();
+
+        const id = data._id;
+
+        await pusher.trigger('presence-chat-channel', 'new-message', {
+            id,
+            content,
+            type,
+            user,
+            profile,
+            timestamp,
+            reactions,
+        });
+
+        return res.status(200).json({ status: true, message: data._id });
+    }
+
+
+
+    try {
         const newMessage = new Message({
             streamId,
             content,

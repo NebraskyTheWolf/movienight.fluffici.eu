@@ -16,7 +16,7 @@ export interface Sanction {
     ban?: Ban;
 }
 
-export interface IProfile extends Document {
+export interface IProfile {
     discordId: string;
     permissions: number;
     flags: number;
