@@ -46,7 +46,11 @@ const EmbedMessage: React.FC<EmbedMessageProps> = ({ embed, isLowOpacity }) => {
                     {embed.fields.map((field, index) => (
                         <div key={index} className={`flex-1 min-w-[200px] mr-2 ${field.inline ? 'inline-block' : ''}`}>
                             <div className="font-bold text-gray-300">{field.name}</div>
-                            <div className="text-gray-300">{field.value}</div>
+                            <div className="text-gray-300">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                    {field.value}
+                                </ReactMarkdown>
+                            </div>
                         </div>
                     ))}
                 </div>

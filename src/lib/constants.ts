@@ -15,7 +15,10 @@ export const CHAT_PERMISSION = {
 
     PUBLISH_STREAM: 1 << 12,
     JOIN_PRESENCE: 1 << 13,
-    USE_COMMAND: 1 << 14
+    USE_COMMAND: 1 << 14,
+    SEND_GIF: 1 << 15,
+    SEND_LINKS: 1 << 16,
+
 };
 
 export const USER_FLAGS = {

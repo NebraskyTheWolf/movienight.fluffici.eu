@@ -39,6 +39,7 @@ import registerCommands from "@/lib/CommandRegistry.ts";
 import {getEmojiDataFromNative} from "emoji-mart";
 import {User} from "next-auth";
 import {hasPermissions} from "@/lib/permission.ts";
+import LoadingComponent from "@/components/Loading.tsx";
 
 const CHANNEL_NAME = 'presence-chat-channel';
 const NEW_MESSAGE_EVENT = 'new-message';
@@ -329,6 +330,11 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     }
 
     const handleReplyMessage = (message: IMessage) => {
+        if (profile && !hasPermission(profile, CHAT_PERMISSION.REPLY_MESSAGE)) {
+            showToast("You don't have the permission to reply to messages", "error")
+            return
+        }
+
         setContent(`@${message.user.name} `);
         setReplyTo(message);
     };
@@ -513,10 +519,10 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                         </button>
                     )}
                 </div>
-                <div className="flex-1 overflow-y-auto p-4" ref={messageListRef}> {/* Add ref here */}
+                <div className="flex-1 overflow-y-auto p-4" ref={messageListRef}>
                     {isLoading ? (
                         <div className="justify-center">
-                            <p>Loading chat...</p>
+                            <LoadingComponent loading={true} key={"chat"} />
                         </div>
                     ) : (
                         <>
@@ -589,9 +595,13 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                     ) : (
                                         <div>
                                             <HighlightUserMention user={{ name: user?.name }} message={{ content: message.content }} />
-                                            {detectUrls(message.content!)?.map((url) => (
-                                                <Embed url={url} key={url} />
-                                            ))}
+                                            {message.profile && hasPermission(message.profile, CHAT_PERMISSION.SEND_LINKS) && (
+                                                <>
+                                                    {detectUrls(message.content!)?.map((url) => (
+                                                        <Embed url={url} key={url} />
+                                                    ))}
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                     {renderEmojiReactions(message.reactions)}
@@ -602,17 +612,26 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                 </div>
                 {status === 'loading' ? (
                     <div className="p-4 border-t border-pink-600">
-                        <p>Loading...</p>
+                        <LoadingComponent loading={true} key={"chat"} />
                     </div>
                 ) : session ? (
                     hasPermission(profile, CHAT_PERMISSION.SEND_MESSAGE) ? (
                         <div className="p-4 border-t border-pink-600">
                             {replyTo && (
-                                <div className="p-2 bg-gray-700 text-white flex justify-between items-center">
-                                    <div>
-                                        Replying to <span className="font-bold">@{replyTo.user?.name}</span>: {replyTo.content}
+                                <div className="p-2 bg-gray-700 text-white flex justify-between items-center rounded-md mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="text-gray-400">
+                                            Replying to <span className="font-bold text-indigo-400">@{replyTo.user?.name}</span>:
+                                        </div>
+                                        <div className="bg-gray-800 p-2 rounded-md text-sm">
+                                            {replyTo.content}
+                                        </div>
                                     </div>
-                                    <button onClick={() => setReplyTo(null)} className="text-red-500">Cancel</button>
+                                    <button onClick={() => setReplyTo(null)} className="text-red-500 hover:text-red-700 ml-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 9l3.293-3.293a1 1 0 011.414 1.414L11.414 10l3.293 3.293a1 1 0 01-1.414 1.414L10 11.414l-3.293 3.293a1 1 0 01-1.414-1.414L8.586 10 5.293 6.707a1 1 0 011.414-1.414L10 8.586z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
                                 </div>
                             )}
                             <div className="flex">
@@ -650,16 +669,20 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                         )}
                                     </>
                                 )}
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowGifPicker(!showGifPicker)}
-                                >
-                                    <FaImages />
-                                </Button>
-                                {showGifPicker && (
-                                    <div className="absolute bottom-16 right-4 bg-white z-50">
-                                        <GifPicker tenorApiKey={"AIzaSyBVQLYT3FONCEj_r6425suu7I5CDH4copQ"} onGifClick={handleSendGif} theme={Theme.DARK} locale="cs" contentFilter={ContentFilter.HIGH} />
-                                    </div>
+                                {user && hasPermission(profile, CHAT_PERMISSION.SEND_GIF) && (
+                                   <>
+                                       <Button
+                                           variant="outline"
+                                           onClick={() => setShowGifPicker(!showGifPicker)}
+                                       >
+                                           <FaImages />
+                                       </Button>
+                                       {showGifPicker && (
+                                           <div className="absolute bottom-16 right-4 bg-white z-50">
+                                               <GifPicker tenorApiKey={"AIzaSyBVQLYT3FONCEj_r6425suu7I5CDH4copQ"} onGifClick={handleSendGif} theme={Theme.DARK} locale="cs" contentFilter={ContentFilter.HIGH} />
+                                           </div>
+                                       )}
+                                   </>
                                 )}
                             </div>
                             {commandSuggestions.length > 0 && (
@@ -725,7 +748,9 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                 {profile && hasPermission(profile, CHAT_PERMISSION.MUTE_USER) && (
                     <Item onClick={({ props }) => handleMuteUser(props.message)}><FaUserLock /> Mute User</Item>
                 )}
-                <Item onClick={({ props }) => handleReplyMessage(props.message)}><FaReply /> Reply</Item>
+                {profile && hasPermission(profile, CHAT_PERMISSION.REPLY_MESSAGE) && (
+                    <Item onClick={({ props }) => handleReplyMessage(props.message)}><FaReply /> Reply</Item>
+                )}
             </Menu>
             <ExternalRedirect isOpen={isDialogOpen} url={externalUrl} />
         </>

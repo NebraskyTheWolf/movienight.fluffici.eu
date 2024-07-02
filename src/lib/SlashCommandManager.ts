@@ -23,7 +23,7 @@ class SlashCommandManager {
         this.commands.delete(commandName);
     }
 
-    executeCommand(input: string): Message {
+    async executeCommand(input: string): Promise<Message> {
         const args = input.split(' ');
         const commandName = args.shift();
 
@@ -33,7 +33,7 @@ class SlashCommandManager {
 
         const command = this.commands.get(commandName)!;
         const parsedArgs = this.parseArgs(args, command.options);
-        return command.execute(parsedArgs);
+        return await command.execute(parsedArgs);
     }
 
     parseArgs(args: string[], options?: ApplicationCommandOption[]): any {

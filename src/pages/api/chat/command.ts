@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(403).json({ status: false, error: 'Insufficient permissions' });
         }
 
-        const { content, embeds } = commandManager.executeCommand(command);
+        const { content, embeds } = await commandManager.executeCommand(command);
 
         await connectToDatabase();
         const stream = await Stream.findOne({});

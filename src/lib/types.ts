@@ -66,6 +66,6 @@ export interface SlashCommand {
     name: string;
     description: string;
     options?: ApplicationCommandOption[];
-    execute: (args: any) => Message;
+    execute: (args: any) => Promise<Message>;
     permissions?: number;
 }

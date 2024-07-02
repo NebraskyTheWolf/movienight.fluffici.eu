@@ -62,6 +62,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ status: false, error: 'Invalid message type' });
     }
 
+    if (type === 'gif' && !hasPermission(session.profile, CHAT_PERMISSION.SEND_GIF)) {
+        return res.status(403).json({ status: false, error: 'Forbidden' });
+    }
+
     const chatSettings = await ChatSettings.findOne({ _id: '668348b752dc60219a0aa9fe' })
 
     let isContentBlacklisted = false;
