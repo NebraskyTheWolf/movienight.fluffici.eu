@@ -522,7 +522,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             )}
 
             <DraggableCore disabled={!isOverlay}>
-                <div className={`fixed ${isOverlay ? 'top-4 left-4 w-[600px] h-[780px] bg-opacity-90 ' : 'top-4 right-4 bottom-4 w-[calc(100%-32px)] md:w-[calc(25%-32px)] h-[calc(100%-32px)]'} bg-gray-900 text-white flex flex-col shadow-lg z-40 transition-transform transform md:translate-x-0 ${isCollapsed && !isOverlay ? 'translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
+                <div className={`fixed ${isOverlay ? 'top-4 left-4 w-[600px] h-[380px] bg-opacity-90 ' : 'top-4 right-4 bottom-4 w-[calc(100%-32px)] md:w-[calc(25%-32px)] h-[calc(100%-32px)]'} bg-gray-900 text-white flex flex-col shadow-lg z-40 transition-transform transform md:translate-x-0 ${isCollapsed && !isOverlay ? 'translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
                     <div className="flex justify-between items-center p-4 border-b border-pink-600">
                         <h2 className="text-xl font-bold">CHAT</h2>
                         {isOverlay && (
