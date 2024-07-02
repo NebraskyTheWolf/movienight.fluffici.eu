@@ -51,6 +51,7 @@ const Player: React.FC<PlayerProps> = () => {
     const [streamUrl, setStreamUrl] = useState('');
     const [events, setEvents] = useState<Event[]>()
     const [showLatestEvent, setShowLatestEvent] = useState<boolean>(true)
+    const [playerKey, setPlayerKey] = useState<number>(0);
 
     const { data: session } = useSession();
 
@@ -125,7 +126,7 @@ const Player: React.FC<PlayerProps> = () => {
         showToast("The stream just started.")
         setIsClient(false)
         setLoading(true);
-
+        setPlayerKey(prevKey => prevKey + 1);
 
         setTimeout(() => {
             setIsClient(true)
@@ -300,6 +301,7 @@ const Player: React.FC<PlayerProps> = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                     {isClient && (
                         <ReactPlayer
+                            key={playerKey}
                             url={streamUrl}
                             playing={isPlaying}
                             controls={false}
