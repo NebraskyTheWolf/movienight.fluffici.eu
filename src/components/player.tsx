@@ -131,7 +131,7 @@ const Player: React.FC<PlayerProps> = () => {
         setTimeout(() => {
             setIsClient(true)
             setLoading(false);
-        }, 3000)
+        }, 6000)
     };
 
     const handleEndBroadcast = () => {
