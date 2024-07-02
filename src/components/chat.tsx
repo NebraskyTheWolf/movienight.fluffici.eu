@@ -234,15 +234,26 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
 
         if (content.length <= 0) return;
-
         let result: Message = { content };
-        const response = await axios.post(`/api/chat/send-message`, { content: result.content, type });
 
-        if (response.data.status) {
-            setContent('');
-            setReplyTo(null);
+        if (replyTo) {
+            const response = await axios.post(`/api/chat/reply-message`, { content: result.content, messageId: replyTo._id });
+
+            if (response.data.status) {
+                setContent('');
+                setReplyTo(null);
+            } else {
+                showToast(response.data.error, "error")
+            }
         } else {
-            showToast(response.data.error, "error")
+            const response = await axios.post(`/api/chat/send-message`, { content: result.content, type });
+
+            if (response.data.status) {
+                setContent('');
+                setReplyTo(null);
+            } else {
+                showToast(response.data.error, "error")
+            }
         }
     }, [content, user]);
 
@@ -335,18 +346,6 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         if (profile && !hasPermission(profile, CHAT_PERMISSION.REPLY_MESSAGE)) {
             showToast("You don't have the permission to reply to messages", "error")
             return
-        }
-
-        if (content.length <= 0) return;
-
-        let result: Message = { content };
-        const response = await axios.post(`/api/chat/reply-message`, { content: result.content, messageId: message._id });
-
-        if (response.data.status) {
-            setContent('');
-            setReplyTo(null);
-        } else {
-            showToast(response.data.error, "error")
         }
 
         setContent(`@${message.user.name} `);
