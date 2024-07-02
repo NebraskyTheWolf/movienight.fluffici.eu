@@ -24,10 +24,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const { q } = req.query;
 
             if (q) {
-                const decoded = decodeFromBase64<string>(<string>q)
-                const parsed = JSON.parse(decoded);
+                const decoded = decodeFromBase64<IChatSettings>(<string>q)
 
-                const settings = await ChatSettings.findOneAndUpdate({}, parsed, {
+                const settings = await ChatSettings.findOneAndUpdate({}, decoded, {
                     new: true,
                     upsert: true,
                 });

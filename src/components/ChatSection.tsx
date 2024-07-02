@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {decodeFromBase64, encodeToBase64} from "next/dist/build/webpack/loaders/utils";
+import {showToast} from "@/components/toast.tsx";
 
 interface AutoModerationSettings {
     blacklist: string[];
@@ -30,10 +31,10 @@ const ChatSection: React.FC = () => {
         const fetchChatSettings = async () => {
             try {
                 const response = await axios.get('/api/chat/settings');
-                const decodedSettings = decodeFromBase64<string>(response.data.settings);
-                setSettings(JSON.parse(decodedSettings));
+                const decodedSettings = decodeFromBase64<ChatSettings>(response.data.settings);
+                setSettings(decodedSettings);
             } catch (error) {
-                console.error('Failed to fetch chat settings', error);
+                showToast("Failed to fetch chat settings", "error")
             } finally {
                 setLoading(false);
             }
@@ -107,11 +108,11 @@ const ChatSection: React.FC = () => {
     const saveSettings = async () => {
         setSaving(true);
         try {
-            const encodedSettings = encodeToBase64(JSON.stringify(settings));
+            const encodedSettings = encodeToBase64<string>(JSON.stringify(settings));
             await axios.get(`/api/chat/settings?q=${encodedSettings}`);
-            alert('Settings updated successfully!');
+            showToast("Chat settings saved!", "success")
         } catch (error) {
-            console.error('Failed to update settings', error);
+            showToast("Failed to update settings", "error")
         } finally {
             setSaving(false);
         }
