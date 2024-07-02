@@ -1,12 +1,17 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
 import path from 'path';
-import Stream from "@/models/Stream.ts";
 import Redis from "ioredis";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 const redis = new Redis(process.env.REDIS_URL!);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
+        return res.status(401).json({ error: 'Unauthorized' });
+
     const key = await redis.get("live-key");
 
     const filePath = path.resolve(`/app/media/live/${key}/index.m3u8`);

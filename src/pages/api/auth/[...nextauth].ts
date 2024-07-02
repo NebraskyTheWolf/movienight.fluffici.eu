@@ -1,11 +1,11 @@
-import NextAuth from "next-auth";
+import NextAuth, {NextAuthOptions} from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
 import connectToDatabase from "@/lib/mongodb.ts";
 import Profile from "@/models/Profile.ts";
 import {addPermission} from "@/lib/permission.ts";
 import {CHAT_PERMISSION, USER_FLAGS} from "@/lib/constants.ts";
 
-export default NextAuth({
+export const authOptions: NextAuthOptions = {
     providers: [
         DiscordProvider({
             clientId: process.env.DISCORD_CLIENT_ID!,
@@ -55,4 +55,6 @@ export default NextAuth({
             return session;
         },
     }
-});
+};
+
+export default NextAuth(authOptions)

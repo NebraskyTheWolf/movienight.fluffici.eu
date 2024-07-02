@@ -4,13 +4,13 @@ import Profile from "@/models/Profile.ts";
 import {getSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
+import { getServerSession } from 'next-auth';
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req })
-
-    if (!session) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
         return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     if (!hasPermission(session.profile, CHAT_PERMISSION.MODERATION_DASHBOARD)) {
         return res.status(403).json({ error: 'Forbidden' });

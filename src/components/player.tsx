@@ -17,7 +17,9 @@ import pusher from '../lib/pusher';
 import {showToast} from "@/components/toast.tsx";
 import {User} from "next-auth";
 import {throttle} from "lodash";
-import {useRouter} from "next/navigation"; // Import your Pusher instance
+import {useRouter} from "next/navigation";
+import { Resizable } from 'react-resizable';
+import { DraggableCore } from 'react-draggable';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
@@ -203,6 +205,11 @@ const Player: React.FC = () => {
         setLoading(false);
     };
 
+    const onDragEnd = () => {
+
+    }
+
+
     return (
         <div ref={playerRef} className="relative flex w-full h-screen bg-black" onMouseMove={handleMouseMove} style={{ overflow: 'hidden' }}>
             {showContentRating && streamInfo && (
@@ -314,9 +321,7 @@ const Player: React.FC = () => {
                 </div>
             )}
             {showOverlayChat && isFullScreen && (
-                <div className="absolute top-4 left-4 w-1/4 h-1/3 rounded-lg overflow-hidden">
-                    <Chat streamId={streamInfo?.streamId} isOverlay={true} />
-                </div>
+                <Chat streamId={streamInfo?.streamId} isOverlay={true} />
             )}
         </div>
     );

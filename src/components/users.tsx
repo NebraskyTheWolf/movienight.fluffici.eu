@@ -1,10 +1,11 @@
+"use client"
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { IProfile } from '@/models/Profile.ts';
 import UserDetails from './UserDetails';
 import {showToast} from "@/components/toast.tsx";
-
-
+import {Button} from "@/components/button.tsx";
 
 const UsersSection: React.FC = () => {
     const [users, setUsers] = useState<IProfile[]>([]);
@@ -22,8 +23,6 @@ const UsersSection: React.FC = () => {
 
         fetchUsers();
     }, []);
-
-
 
     return (
         <div className="p-6">
@@ -45,33 +44,29 @@ const UsersSection: React.FC = () => {
                         >
                             <td className="p-3">{user.discordId}</td>
                             <td className="p-3">
-                                <button
+                                <Button
                                     onClick={async (e) => {
                                         e.stopPropagation();
-                                        try {
-                                            const response = await axios.get(`/api/chat/moderation/mute?userId=${user.discordId}`);
-                                            if (response.data.status) {
-                                                showToast(`${user.discordId} has been muted`)
-                                            } else {
-                                                showToast(response.data.message, "error")
-                                            }
-                                        } catch (error) {
-                                            showToast(`A error occurred while muting`, "error")
+                                        const response = await axios.post(`/api/chat/moderation/mute`, { userId: user.discordId });
+                                        if (response.data.status) {
+                                            showToast(`${user.discordId} has been muted`)
+                                        } else {
+                                            showToast(response.data.message, "error")
                                         }
                                     }}
-                                    className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 mr-2"
+                                    variant="outline"
                                 >
                                     Mute
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         // Implement ban functionality
                                     }}
-                                    className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                                    variant="destructive"
                                 >
                                     Ban
-                                </button>
+                                </Button>
                             </td>
                         </tr>
                     ))}

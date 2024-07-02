@@ -1,19 +1,19 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import connectToDatabase from '@/lib/mongodb.ts';
-import Stream from '@/models/Stream.ts';
-import path from 'path';
 import Profile from "@/models/Profile.ts";
 import { v4 } from 'uuid';
-import {getSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req })
+    if (req.method !== "POST")
+        return res.status(405).json({ error: 'Method Not Allowed' });
 
-    if (!session) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
         return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     const requestingUser = await Profile.findOne({ discordId: session.user.id });
 

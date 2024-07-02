@@ -6,6 +6,8 @@ import Message from "@/models/Message.ts";
 import {hasPermission} from "@/lib/utils.ts";
 import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -16,11 +18,12 @@ const pusher = new Pusher({
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req })
+    if (req.method !== "GET")
+        return res.status(405).json({ error: 'Method Not Allowed' });
 
-    if (!session) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
         return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     await connectToDatabase()
 
@@ -34,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (requestingUser.permissions == 0) {
             const ban = requestingUser.sanction.ban;
 
-            await pusher.trigger('chat-channel', 'banned-user', { id: requestingUser.discordId });
+            await pusher.trigger('presence-chat-channel', 'banned-user', { id: requestingUser.discordId });
 
             return res.status(200).json({ status: true, ban });
         }

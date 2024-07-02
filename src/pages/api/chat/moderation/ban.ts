@@ -8,6 +8,8 @@ import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
 import {removePermission} from "@/lib/permission.ts";
 import {v4} from "uuid";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -29,14 +31,16 @@ const pusher = new Pusher({
  * @throws {Error} - If there is an error muting the user.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
+    if (req.method !== "POST")
+        return res.status(405).json({ error: 'Method Not Allowed' });
+
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
+        return res.status(401).json({ error: 'Unauthorized' });
+
     await connectToDatabase();
 
-    const { userId, reason} = req.query;
-    const session = await getSession({ req })
-
-    if (!session) {
-        return res.status(401).json({ status: false, error: 'Unauthorized' });
-    }
+    const { userId, reason} = req.body;
 
     const requestingUser = await Profile.findOne({ discordId: session.user.id });
     const targetUser = await Profile.findOne({ discordId: userId});
@@ -62,8 +66,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     try {
-        await pusher.trigger('chat-channel', 'user-banned', { id: targetUser.discordId });
-        await pusher.trigger('chat-channel', 'new-message', {
+        await pusher.trigger('presence-chat-channel', 'user-banned', { id: targetUser.discordId });
+        await pusher.trigger('presence-chat-channel', 'new-message', {
             id: v4(),
             content: `@${session.user.name} banned ${targetUser.id} reason ${reason}`,
             type: 'system',

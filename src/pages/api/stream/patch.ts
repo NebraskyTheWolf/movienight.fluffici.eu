@@ -8,6 +8,8 @@ import {getSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
 import {decodeFromBase64} from "next/dist/build/webpack/loaders/utils";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 export interface ContentRating {
     age: number;
@@ -20,11 +22,12 @@ export interface Data {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req })
+    if (req.method !== "POST")
+        return res.status(405).json({ error: 'Method Not Allowed' });
 
-    if (!session) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
         return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     const requestingUser = await Profile.findOne({ discordId: session.user.id });
 
@@ -32,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const data: Data = decodeFromBase64(<string>req.query.data)
+    const data: Data = req.body
 
     if (!data) {
         return res.status(400).json({ error: 'Invalid data' });

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+"use client"
+
+import React, {useEffect, useState} from 'react';
 import Switch from 'react-switch';
 import { IProfile } from '@/models/Profile';
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
@@ -34,19 +36,22 @@ interface DiscordUser {
 const UserDetails: React.FC<UserDetailsProps> = ({ user, onClose }) => {
     const [permissions, setPermissions] = useState(user.permissions);
     const [discord, setDiscord] = useState<DiscordUser>();
-    const fetchDiscordUser = async () => {
-        try {
-            const response = await axios.get(`/api/fetch-discord?discordId=${user.discordId}`)
-            setDiscord(response.data)
-        } catch (error) {}
-    }
 
-    fetchDiscordUser()
+    useEffect(() => {
+        const fetchDiscordUser = async () => {
+            try {
+                const response = await axios.get(`/api/fetch-discord?discordId=${user.discordId}`)
+                setDiscord(response.data)
+            } catch (error) {}
+        }
+
+        fetchDiscordUser()
+    }, []);
 
     const handlePermissionChange = (perm: number) => {
         const patchPermissions = async (perm: number) => {
             try {
-                await axios.get(`/api/chat/moderation/patch-permissions?id=${user.discordId}&permissions=${perm}`)
+                await axios.post(`/api/chat/moderation/patch-permissions`, { id: user.discordId, permissions: perm })
             } catch (error) {
                 showToast("Failed to change permissions", "error")
             }
@@ -58,7 +63,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ user, onClose }) => {
 
     const muteUser = async () => {
         try {
-            const response = await axios.get(`/api/chat/moderation/mute?userId=${user.discordId}`);
+            const response = await axios.post(`/api/chat/moderation/mute`, { userId: user.discordId });
             if (response.data.status) {
                 showToast(`${user.discordId} has been muted`)
             } else {
@@ -93,7 +98,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ user, onClose }) => {
                                     offColor="#F44336"
                                     uncheckedIcon={false}
                                     checkedIcon={false}
-                                    disabled={(permissions & CHAT_PERMISSION.ADMINISTRATOR) == CHAT_PERMISSION.ADMINISTRATOR}
+                                    disabled={Boolean(permissions & Number(CHAT_PERMISSION))}
                                 />
                             </label>
                         ))}

@@ -23,7 +23,7 @@ export interface IMessage {
     _id: string;
     streamId: string;
     content: string;
-    type: 'user' | 'system';
+    type: 'user' | 'system' | 'gif';
     user: User;
     profile: IProfile;
     timestamp: number;

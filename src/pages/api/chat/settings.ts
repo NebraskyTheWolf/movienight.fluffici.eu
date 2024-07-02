@@ -5,13 +5,13 @@ import {decodeFromBase64, encodeToBase64} from "next/dist/build/webpack/loaders/
 import {getSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req })
-
-    if (!session) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
+        return res.status(401).json({ error: 'Unauthorized' });
 
     if (!hasPermission(session.profile, CHAT_PERMISSION.ADMINISTRATOR)) {
         return res.status(403).json({ success: false, message: 'Forbidden' });
@@ -24,9 +24,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const { q } = req.query;
 
             if (q) {
-                const decoded = decodeFromBase64<IChatSettings>(<string>q)
+                const decoded = decodeFromBase64<string>(<string>q)
 
-                const settings = await ChatSettings.findOneAndUpdate({}, decoded, {
+                const settings = await ChatSettings.findOneAndUpdate({ _id: '668348b752dc60219a0aa9fe' }, JSON.parse(JSON.stringify(decoded)), {
                     new: true,
                     upsert: true,
                 });
@@ -37,7 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 res.status(200).json({ settings: encoded });
             }
         } catch (error) {
-            res.status(400).json({ success: false, error });
+            console.log(error)
+            res.status(400).json({ success: false });
         }
     } else {
         res.status(405).json({ success: false });

@@ -8,6 +8,8 @@ import {getSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
 import Stream from "@/models/Stream.ts";
 import {decodeFromBase64} from "next/dist/build/webpack/loaders/utils";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -18,11 +20,12 @@ const pusher = new Pusher({
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req })
+    if (req.method !== "POST")
+        return res.status(405).json({ error: 'Method Not Allowed' });
 
-    if (!session) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
         return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     await connectToDatabase();
     const stream = await Stream.findOne({});
@@ -31,7 +34,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Stream not found' });
     }
 
-    const content = <string>req.query.content;
+    const {content, type } = req.body;
+
     const { streamId } = stream
     const { user } = session!;
 
@@ -44,8 +48,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const { type, timestamp, reactions} = {
-        type: 'user',
+    if (type !== "user" && type !== "gif") {
+        return res.status(400).json({ error: 'Invalid message type' });
+    }
+
+    const { timestamp, reactions} = {
         timestamp: Date.now(),
         reactions: []
     }
@@ -67,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const id = data._id;
 
-        await pusher.trigger('chat-channel', 'new-message', {
+        await pusher.trigger('presence-chat-channel', 'new-message', {
             id,
             content,
             type,

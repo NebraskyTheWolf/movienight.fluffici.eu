@@ -1,23 +1,10 @@
-import React, { useState } from 'react';
-import axios from "axios";
-import ReactSwitch from "react-switch";
-import {showToast} from "@/components/toast.tsx";
+"use client"
 
-export const CHAT_PERMISSION = {
-    SEND_MESSAGE: 1 << 0,
-    DELETE_MESSAGE: 1 << 1,
-    BAN_USER: 1 << 2,
-    MUTE_USER: 1 << 3,
-    BROADCAST: 1 << 4,
-    MODERATION_DASHBOARD: 1 << 5,
-    MOD_VIEW: 1 << 6,
-    READ_MESSAGE_HISTORY: 1 << 7,
-    ADMINISTRATOR: 1 << 8,
-    MESSAGE_REACTION: 1 << 9,
-    SEND_EMOJIS: 1 << 10,
-    REPLY_MESSAGE: 1 << 11,
-    PUBLISH_STREAM: 1 << 12,
-};
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import ReactSwitch from 'react-switch';
+import { showToast } from '@/components/toast.tsx';
+import { CHAT_PERMISSION } from '@/lib/constants';
 
 const PERMISSION_LABELS = {
     [CHAT_PERMISSION.SEND_MESSAGE]: 'Send Message',
@@ -61,6 +48,9 @@ interface User {
 interface DiscordUser {
     id: string;
     username: string;
+    avatar: string;
+    banner: string;
+    banner_color: string;
 }
 
 interface UserCardProps {
@@ -72,74 +62,94 @@ const UserCard: React.FC<UserCardProps> = ({ user }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [permissions, setPermissions] = useState(user.permissions);
 
+    useEffect(() => {
+        const fetchDiscordUser = async () => {
+            try {
+                const response = await axios.get(`/api/fetch-discord?discordId=${user.discordId}`);
+                setDiscord(response.data);
+            } catch (error) {
+                console.error('Failed to fetch Discord user', error);
+            }
+        };
+
+        fetchDiscordUser();
+    }, [user.discordId]);
+
     const toggleExpand = () => {
         setIsExpanded(!isExpanded);
     };
 
-    const handlePermissionChange = (perm: number) => {
+    const handlePermissionChange = async (perm: number) => {
         const patchPermissions = async (perm: number) => {
             try {
-                await axios.get(`/api/chat/moderation/patch-permissions?id=${user.discordId}&permissions=${perm}`)
+                await axios.get(`/api/chat/moderation/patch-permissions?id=${user.discordId}&permissions=${perm}`);
             } catch (error) {
-                showToast("Failed to change permissions", "error")
+                showToast('Failed to change permissions', 'error');
             }
-        }
+        };
 
-        setPermissions((prevPermissions) =>
-            prevPermissions ^ perm
-        );
+        setPermissions((prevPermissions) => prevPermissions ^ perm);
 
-        patchPermissions(permissions)
+        patchPermissions(permissions);
     };
-
-    const fetchDiscordUser = async () => {
-        try {
-            const response = await axios.get(`/api/fetch-discord?discordId=${user.discordId}`)
-            setDiscord(response.data)
-        } catch (error) {}
-    }
-
-    fetchDiscordUser()
 
     return (
         <div className="p-4 bg-gray-900 text-gray-200 rounded-lg shadow-md">
-            <div onClick={toggleExpand} className="cursor-pointer">
-                <h3 className="text-xl font-bold">{discord?.username}</h3>
-                <p className="text-gray-400">{user.discordId}</p>
-            </div>
-            {isExpanded && (
-                <div className="mt-4">
-                    <h4 className="font-semibold mb-2">Permissions</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {Object.entries(PERMISSION_LABELS).map(([perm, label]) => (
-                            <label key={perm} className="flex items-center justify-between">
-                                <span>{label}</span>
-                                <ReactSwitch
-                                    checked={Boolean(permissions & Number(perm))}
-                                    onChange={() => handlePermissionChange(Number(perm))}
-                                    onColor="#4CAF50"
-                                    offColor="#F44336"
-                                    uncheckedIcon={false}
-                                    checkedIcon={false}
-                                />
-                            </label>
-                        ))}
+            {discord && (
+                <div>
+                    <div
+                        className="h-32 bg-cover bg-center rounded-t-lg"
+                        style={{ backgroundImage: `url('https://cdn.discordapp.com/banners/${discord.id}/${discord.banner}.png')`, borderTop: 4, borderTopColor: `${discord.banner_color}` }}
+                    />
+                    <div className="flex items-center mt-4">
+                        <img
+                            src={`https://cdn.discordapp.com/avatars/${discord.id}/${discord.avatar}.png`}
+                            alt={discord.username}
+                            className="w-16 h-16 rounded-full border-2 border-gray-700"
+                        />
+                        <div className="ml-4">
+                            <h3 className="text-xl font-bold">{discord.username}</h3>
+                            <p className="text-gray-400">{user.discordId}</p>
+                        </div>
                     </div>
-                    <h4 className="font-semibold mt-4">Sanctions</h4>
-                    {user.sanction.mute && (
-                        <div className="mt-2">
-                            <p className="text-gray-400">Muted on Stream: {user.sanction.mute.streamId}</p>
-                            <p className="text-gray-400">Reason: {user.sanction.mute.reason}</p>
-                        </div>
-                    )}
-                    {user.sanction.ban && (
-                        <div className="mt-2">
-                            <p className="text-gray-400">Banned by: {user.sanction.ban.issuer}</p>
-                            <p className="text-gray-400">Reason: {user.sanction.ban.reason}</p>
-                        </div>
-                    )}
                 </div>
             )}
+            <div onClick={toggleExpand} className="cursor-pointer mt-4">
+                <h4 className="font-semibold mb-2">Permissions</h4>
+                {isExpanded && (
+                    <div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {Object.entries(PERMISSION_LABELS).map(([perm, label]) => (
+                                <label key={perm} className="flex items-center justify-between">
+                                    <span>{label}</span>
+                                    <ReactSwitch
+                                        checked={Boolean(permissions & Number(perm))}
+                                        onChange={() => handlePermissionChange(Number(perm))}
+                                        onColor="#4CAF50"
+                                        offColor="#F44336"
+                                        uncheckedIcon={false}
+                                        checkedIcon={false}
+                                        disabled={Boolean(permissions & Number(CHAT_PERMISSION.ADMINISTRATOR))}
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                        <h4 className="font-semibold mt-4">Sanctions</h4>
+                        {user.sanction.mute && (
+                            <div className="mt-2">
+                                <p className="text-gray-400">Muted on Stream: {user.sanction.mute.streamId}</p>
+                                <p className="text-gray-400">Reason: {user.sanction.mute.reason}</p>
+                            </div>
+                        )}
+                        {user.sanction.ban && (
+                            <div className="mt-2">
+                                <p className="text-gray-400">Banned by: {user.sanction.ban.issuer}</p>
+                                <p className="text-gray-400">Reason: {user.sanction.ban.reason}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

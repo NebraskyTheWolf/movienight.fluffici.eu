@@ -6,6 +6,8 @@ import Message from "@/models/Message.ts";
 import {hasPermission} from "@/lib/utils.ts";
 import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
+import {getServerSession} from "next-auth";
+import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -16,13 +18,14 @@ const pusher = new Pusher({
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const session = await getSession({ req })
+    if (req.method !== "POST")
+        return res.status(405).json({ error: 'Method Not Allowed' });
 
-    if (!session) {
+    const session = await getServerSession(req, res, authOptions);
+    if (!session)
         return res.status(401).json({ error: 'Unauthorized' });
-    }
 
-    const { messageId } = req.query;
+    const { messageId } = req.body;
 
     await connectToDatabase()
 
@@ -35,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = await Message.deleteOne({ _id: messageId })
 
     try {
-        await pusher.trigger('chat-channel', 'delete-message', { id: messageId });
+        await pusher.trigger('presence-chat-channel', 'delete-message', { id: messageId });
 
         res.status(200).json({ message: 'Message deleted', result });
     } catch (error) {

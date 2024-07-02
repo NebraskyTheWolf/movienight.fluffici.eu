@@ -35,7 +35,6 @@ export async function getServerSideProps(context: { req: GetSessionParams | unde
 
 const DashboardScreen: React.FC = () => {
     const [activeSection, setActiveSection] = useState<string>('home');
-    const { data: session, status } = useSession();
 
     const renderSection = () => {
         switch (activeSection) {
@@ -55,9 +54,7 @@ const DashboardScreen: React.FC = () => {
     return (
         <div className="flex h-screen">
             <aside className="w-64 bg-gray-800 text-white flex flex-col">
-                <Link href="/">
-                    <div className="p-4 text-2xl font-bold bg-gray-900">Movie Night</div>
-                </Link>
+                <div className="p-4 text-2xl font-bold bg-gray-900" onClick={() => window.location.href = '/' }>Movie Night</div>
                 <nav className="flex-1 p-4 space-y-2">
                     <button
                         onClick={() => setActiveSection('home')}
@@ -86,7 +83,7 @@ const DashboardScreen: React.FC = () => {
                 </nav>
             </aside>
             <main className="flex-1 p-6 overflow-y-auto">
-                {renderSection()}
+            {renderSection()}
             </main>
         </div>
     );

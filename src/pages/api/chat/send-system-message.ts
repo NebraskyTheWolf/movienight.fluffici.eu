@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     try {
-        await pusher.trigger('chat-channel', 'new-message', message);
+        await pusher.trigger('presence-chat-channel', 'new-message', message);
         res.status(200).json({ message: 'System message sent' });
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });

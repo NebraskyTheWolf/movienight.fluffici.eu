@@ -2,6 +2,9 @@
 
 import DashboardScreen from '@/components/moderation';
 import React from 'react';
+import {getSession, GetSessionParams} from "next-auth/react";
+import {hasPermission} from "@/lib/utils.ts";
+import {CHAT_PERMISSION} from "@/lib/constants.ts";
 
 const Dashboard: React.FC = () => {
     return (

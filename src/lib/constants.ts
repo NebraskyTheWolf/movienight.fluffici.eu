@@ -13,7 +13,8 @@ export const CHAT_PERMISSION = {
     SEND_EMOJIS: 1 << 10,
     REPLY_MESSAGE: 1 << 11,
 
-    PUBLISH_STREAM: 1 << 12
+    PUBLISH_STREAM: 1 << 12,
+    JOIN_PRESENCE: 1 << 13
 };
 
 export const USER_FLAGS = {
@@ -21,3 +22,5 @@ export const USER_FLAGS = {
     MODERATOR: 1 << 1,
     HOST: 1 << 2
 }
+
+export const USE_GIPHY = Boolean(process.env.GIPHY_ENABLED);
