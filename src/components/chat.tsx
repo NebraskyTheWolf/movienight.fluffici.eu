@@ -76,6 +76,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const [activeMessage, setActiveMessage] = useState<IMessage | null>();
     const { data: session, status, update } = useSession();
+    const messageListRef = useRef<HTMLDivElement>(null); // Add a ref for the message list
 
     const user = session?.user;
 
@@ -468,6 +469,18 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
     };
 
+    useEffect(() => {
+        const messageList = messageListRef.current;
+        if (messageList) {
+            const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 1;
+            messageList.scrollTop = messageList.scrollHeight;
+
+            if (isScrolledToBottom) {
+                messageList.scrollTop = messageList.scrollHeight;
+            }
+        }
+    }, [messages, isLoading]);
+
     return (
         <>
             {showWarning && (
@@ -501,7 +514,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                         </button>
                     )}
                 </div>
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4" ref={messageListRef}> {/* Add ref here */}
                     {isLoading ? (
                         <div className="justify-center">
                             <p>Loading chat...</p>

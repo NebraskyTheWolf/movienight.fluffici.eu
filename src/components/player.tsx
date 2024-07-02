@@ -1,26 +1,27 @@
 "use client";
 
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
 import axios from 'axios';
-import { FaPause, FaPlay, FaVolumeUp, FaVolumeMute, FaExpand, FaCompress, FaComments, FaCogs } from "react-icons/fa";
-import { OnProgressProps } from "react-player/base";
+import {FaCogs, FaComments, FaCompress, FaExpand, FaPause, FaPlay, FaVolumeMute, FaVolumeUp} from "react-icons/fa";
+import {OnProgressProps} from "react-player/base";
 import Tooltip from 'rc-tooltip';
 import 'rc-tooltip/assets/bootstrap.css';
 import Chat from '@/components/chat';
-import { RingLoader } from 'react-spinners';
-import { IStream } from "@/models/Stream.ts";
-import { useSession } from "next-auth/react";
-import { hasPermission } from "@/lib/utils.ts";
-import { CHAT_PERMISSION } from "@/lib/constants.ts";
+import {RingLoader} from 'react-spinners';
+import {IStream} from "@/models/Stream.ts";
+import {useSession} from "next-auth/react";
+import {hasPermission} from "@/lib/utils.ts";
+import {CHAT_PERMISSION} from "@/lib/constants.ts";
 import pusher from '../lib/pusher';
 import {showToast} from "@/components/toast.tsx";
 import {User} from "next-auth";
 import {throttle} from "lodash";
 import {useRouter} from "next/navigation";
-import { Resizable } from 'react-resizable';
-import { DraggableCore } from 'react-draggable';
-import SlashCommandManager from "@/lib/SlashCommandManager.ts";
+import EmbedMessage from "@/components/EmbedMessage.tsx";
+import moment from "moment";
+import Event from '../models/Event.ts'
+import LoadingComponent from "@/components/Loading.tsx";
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
@@ -48,6 +49,8 @@ const Player: React.FC<PlayerProps> = () => {
     const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
     const audioRef = useRef<HTMLAudioElement>(null); // Ref for the audio element
     const [streamUrl, setStreamUrl] = useState('');
+    const [events, setEvents] = useState<Event[]>()
+    const [showLatestEvent, setShowLatestEvent] = useState<boolean>(true)
 
     const { data: session } = useSession();
 
@@ -97,6 +100,12 @@ const Player: React.FC<PlayerProps> = () => {
             }
         };
 
+        const fetchEvents = async () => {
+            const response = await axios.get('https://api.fluffici.eu/api/events');
+            setEvents(response.data.data)
+        }
+
+        fetchEvents()
         fetchStreamInfo();
     }, []);
 
@@ -157,6 +166,7 @@ const Player: React.FC<PlayerProps> = () => {
 
     const togglePlay = () => {
         setIsPlaying(!isPlaying);
+        setShowLatestEvent(!showLatestEvent);
     }
 
     const handleFullScreen = () => {
@@ -198,8 +208,7 @@ const Player: React.FC<PlayerProps> = () => {
     };
 
     const handleError = () => {
-        setLoading(false);
-        setHasError(true);
+        setLoading(true);
     };
 
     const handleBuffer = useCallback(throttle(() => {
@@ -214,6 +223,60 @@ const Player: React.FC<PlayerProps> = () => {
 
     }
 
+    const findLatestOnlineEvent = (): Event | null => {
+        if (!events) {
+            return null;
+        }
+
+        const now = new Date();
+        const onlineEvents = events.filter(event => event.type === 'ONLINE');
+
+        if (onlineEvents.length === 0) {
+            return null;
+        }
+
+        // sort onlineEvents by begin time descending
+        onlineEvents.sort((a, b) => new Date(b.begin).getTime() - new Date(a.begin).getTime())
+
+        const latestOnlineEvent = onlineEvents[0];
+
+        if (new Date(latestOnlineEvent.begin).getTime() > now.getTime()) {
+            return latestOnlineEvent;
+        }
+        else {
+            return null;
+        }
+    };
+
+    const getDuration = (event: Event) => {
+        if (!event) {
+            return "No upcoming online events.";
+        }
+
+        const now = moment();
+        const startTime = moment(event.begin);
+        const duration = moment.duration(startTime.diff(now));
+
+        if (duration.asSeconds() < 0) {
+            return "Started a few moments ago";
+        }
+
+        if (duration.asSeconds() < 60) {
+            return `${Math.floor(duration.asSeconds())} seconds`;
+        }
+
+        if (duration.asMinutes() < 60) {
+            return `${Math.floor(duration.asMinutes())} minutes`;
+        }
+
+        if (duration.asHours() < 24) {
+            return `${Math.floor(duration.asHours())} hours`;
+        }
+
+        return `${Math.floor(duration.asDays())} days`;
+    }
+
+    const latestEventMessage = findLatestOnlineEvent();
 
     return (
         <div ref={playerRef} className="relative flex w-full h-screen bg-black" onMouseMove={handleMouseMove} style={{ overflow: 'hidden' }}>
@@ -226,18 +289,12 @@ const Player: React.FC<PlayerProps> = () => {
                     <p className="mt-1 text-sm text-center">{streamInfo.contentRating.reason}</p>
                 </div>
             )}
-            <div className="absolute top-0 left-0 right-0 bottom-0 flex-1 flex items-center justify-center relative bg-black">
+            <div
+                className="absolute top-0 left-0 right-0 bottom-0 flex-1 flex items-center justify-center relative bg-black">
+                {loading && (
+                   <LoadingComponent loading={true}/>
+                )}
                 <div className="absolute inset-0 flex items-center justify-center">
-                    {loading ? (
-                        <>
-                            <RingLoader color="#ffffff" />
-                        </>
-                    ) : hasError ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-white">
-                            <RingLoader color="#ffffff" />
-                        </div>
-                    ) : (<></>)}
-
                     {isClient && (
                         <ReactPlayer
                             url={streamUrl}
@@ -263,7 +320,37 @@ const Player: React.FC<PlayerProps> = () => {
                         />
                     )}
                 </div>
-                <div className={`absolute bottom-0 left-0 right-0 p-2 md:p-4 bg-gray-900 bg-opacity-75 text-white transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="absolute top-0 left-0 p-2 text-white z-50 rounded-md w-[600px] h-[400px] mt-4 ml-4">
+                    {latestEventMessage && showLatestEvent && (
+                        <EmbedMessage embed={{
+                            color: '2ACFCF',
+                            author: {
+                                name: "Movie Scheduled",
+                                icon_url: "https://autumn.fluffici.eu/attachments/rDbkloCVPYMaCAp5gB7g80ZaSK7B2S-u4Oeawmd8Wv",
+                                url: `https://akce.fluffici.eu/event?id=${latestEventMessage.event_id}`
+                            },
+                            title: latestEventMessage.name!,
+
+                            description: latestEventMessage?.descriptions!,
+                            fields: [
+                                {
+                                    name: 'Starting in',
+                                    value: `${getDuration(latestEventMessage!)}`,
+                                    inline: true
+                                }
+                            ],
+                            image: {
+                                url: `https://autumn.fluffici.eu/banners/${latestEventMessage?.banner_id}`
+                            },
+                            footer: {
+                                text: 'FluffBOT',
+                                icon_url: 'https://cdn.discordapp.com/app-icons/1090193884782526525/1aed19e69224aeb09df782a3285e5e6a.png'
+                            }
+                        }} key={'incoming'} isLowOpacity={true}/>
+                    )}
+                </div>
+                <div
+                    className={`absolute bottom-0 left-0 right-0 p-2 md:p-4 bg-gray-900 bg-opacity-75 text-white transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2 md:space-x-4">
                             <div className="relative flex items-center">
@@ -299,21 +386,22 @@ const Player: React.FC<PlayerProps> = () => {
                         <div className="flex items-center space-x-2 md:space-x-4">
                             <Tooltip overlay="Chat" placement="top">
                                 <button className="p-2 md:p-4 text-xl md:text-2xl rounded" onClick={toggleChat}>
-                                    <FaComments />
+                                    <FaComments/>
                                 </button>
                             </Tooltip>
 
                             {session?.profile && hasPermission(session.profile, CHAT_PERMISSION.MODERATION_DASHBOARD) && (
                                 <Tooltip overlay="Moderation view" placement="top">
-                                    <button className="p-2 md:p-4 text-xl md:text-2xl rounded" onClick={() => router.push("/dashboard")}>
-                                        <FaCogs className="text-yellow-200" />
+                                    <button className="p-2 md:p-4 text-xl md:text-2xl rounded"
+                                            onClick={() => router.push("/dashboard")}>
+                                        <FaCogs className="text-yellow-200"/>
                                     </button>
                                 </Tooltip>
                             )}
 
                             <Tooltip overlay={isFullScreen ? "Exit Fullscreen" : "Fullscreen"} placement="top">
                                 <button className="p-2 md:p-4 text-xl md:text-2xl rounded" onClick={handleFullScreen}>
-                                    {isFullScreen ? <FaCompress /> : <FaExpand />}
+                                    {isFullScreen ? <FaCompress/> : <FaExpand/>}
                                 </button>
                             </Tooltip>
                         </div>
@@ -322,7 +410,7 @@ const Player: React.FC<PlayerProps> = () => {
             </div>
             {showChat && !isFullScreen && (
                 <div className="hidden md:block w-1/4 h-full bg-gray-900">
-                    <Chat streamId={streamInfo?.streamId} />
+                    <Chat streamId={streamInfo?.streamId}/>
                 </div>
             )}
             {showOverlayChat && isFullScreen && (

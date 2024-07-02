@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React from 'react';
 import { EmbedMessage as EmbedMessageType } from '../lib/types';
@@ -8,11 +8,12 @@ import rehypeRaw from 'rehype-raw'; // To support raw HTML in markdown
 
 interface EmbedMessageProps {
     embed: EmbedMessageType;
+    isLowOpacity?: boolean;
 }
 
-const EmbedMessage: React.FC<EmbedMessageProps> = ({ embed }) => {
+const EmbedMessage: React.FC<EmbedMessageProps> = ({ embed, isLowOpacity }) => {
     return (
-        <div className={`p-4 mb-4 bg-gray-800 rounded-md border-l-4`} style={{ borderColor: `#${embed.color}` }}>
+        <div className={isLowOpacity ? 'p-4 mb-4 bg-gray-800 rounded-md border-l-4 opacity-80' : 'p-4 mb-4 bg-gray-800 rounded-md border-l-4'} style={{ borderColor: `#${embed.color}` }}>
             {embed.author && (
                 <div className="flex items-center mb-2">
                     {embed.author.icon_url && (
