@@ -79,13 +79,13 @@ const SettingsSection: React.FC = () => {
 
     const updateStreamInfo = async () => {
         try {
-            await axios.get(`/api/stream/patch?data=${encodeToBase64<Data>({
+            await axios.post(`/api/stream/patch`, {
                 title: streamInfo.title,
                 contentRating: {
                     age: streamInfo.contentRating.age,
                     reason: streamInfo.contentRating.reason
                 }
-            })}`);
+            });
             showToast("Stream information updated successfully!", "success");
         } catch (error) {
             showToast("Failed to update stream information", "error");
