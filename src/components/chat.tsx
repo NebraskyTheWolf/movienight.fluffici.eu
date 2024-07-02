@@ -234,15 +234,14 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
         if (content.length <= 0) return;
 
-        try {
-            let result: Message = { content };
-            await axios.post(`/api/chat/send-message`, { content: result.content, type });
-            setMessages(prevMessages => [...prevMessages, result as IMessage]);
+        let result: Message = { content };
+        const response = await axios.post(`/api/chat/send-message`, { content: result.content, type });
 
+        if (response.data.status) {
             setContent('');
             setReplyTo(null);
-        } catch (error) {
-            showToast("Failed to send message", "error");
+        } else {
+            showToast(response.data.error, "error")
         }
     }, [content, user]);
 
@@ -252,12 +251,12 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             return;
         }
 
-        try {
-            await axios.post(`/api/chat/send-message`, { content: gifUrl.url, type: 'gif' });
-            setShowGifPicker(false);
-        } catch (error) {
-            showToast("Failed to send GIF", "error");
+        const response = await axios.post(`/api/chat/send-message`, { content: gifUrl.url, type: 'gif' });
+        if (!response.data.status) {
+            showToast(response.data.error, "error")
         }
+
+        setShowGifPicker(false);
     }, [user]);
 
     const { show } = useContextMenu({

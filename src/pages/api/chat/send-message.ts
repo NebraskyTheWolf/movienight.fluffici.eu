@@ -24,17 +24,17 @@ const pusher = new Pusher({
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "POST")
-        return res.status(405).json({ error: 'Method Not Allowed' });
+        return res.status(405).json({ status: false, error: 'Method Not Allowed' });
 
     const session = await getServerSession(req, res, authOptions);
     if (!session)
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ status: false, error: 'Unauthorized' });
 
     await connectToDatabase();
     const stream = await Stream.findOne({});
 
     if (!stream) {
-        return res.status(404).json({ error: 'Stream not found' });
+        return res.status(404).json({ status: false, error: 'Stream not found' });
     }
 
     const {content, type } = req.body;
@@ -43,12 +43,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { user } = session!;
 
     if (content.length <= 0)
-        return res.status(400).json({ status: false, message: 'You cannot send empty messages' })
+        return res.status(400).json({ status: false, error: 'You cannot send empty messages' })
 
     const profile = session.profile
 
     if (!profile || !hasPermission(profile, CHAT_PERMISSION.SEND_MESSAGE)) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json({ status: false, error: 'Forbidden' });
     }
 
     await connectToDatabase();
@@ -59,7 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (type !== "user" && type !== "gif") {
-        return res.status(400).json({ error: 'Invalid message type' });
+        return res.status(400).json({ status: false, error: 'Invalid message type' });
     }
 
     const chatSettings = await ChatSettings.findOne({ _id: '668348b752dc60219a0aa9fe' })
@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let isContentBlacklisted = false;
     if (chatSettings) {
         if (!chatSettings.enableChat)
-            return res.status(403).json({ error: 'The chat was disabled by a administrator' });
+            return res.status(403).json({ status: false, error: 'The chat was disabled by a administrator' });
 
         chatSettings.autoModeration.blacklist.forEach(value => {
             if (content.includes(value))
@@ -81,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (isContentBlacklisted)
-        return res.status(403).json({ error: 'Your message contains blacklisted words' });
+        return res.status(403).json({ status: false, error: 'Your message contains blacklisted words' });
 
     try {
         const newMessage = new Message({
