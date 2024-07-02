@@ -29,21 +29,40 @@ const AnalyticsSection: React.FC = () => {
     });
 
     useEffect(() => {
-        const channel = pusher.subscribe('analytics-channel');
-        channel.bind('update-metrics', (data: any) => {
+        let onlineUsers = 0;
+
+        const channel = pusher.subscribe('presence-channel');
+        channel.bind('pusher:subscription_succeeded', (members: any) => {
+            onlineUsers = members.count;
+        });
+
+        channel.bind('pusher:member_added', (member: any) => {
+            onlineUsers++;
+        });
+
+        channel.bind('pusher:member_removed', (member: any) => {
+            onlineUsers--;
+        });
+
+        const updateChartData = () => {
+            const now = new Date();
+
             setChartData((prev) => ({
                 ...prev,
-                labels: [...prev.labels || [], data.timestamp],
+                labels: [...prev.labels || [], now],
                 datasets: [
                     {
                         ...prev.datasets[0],
-                        data: [...prev.datasets[0].data, data.viewers],
+                        data: [...prev.datasets[0].data, onlineUsers],
                     },
                 ],
             }));
 
-            setMetrics(data.metrics);
-        });
+            setMetrics({
+                totalViewers: onlineUsers,
+                totalStreams: 0
+            })
+        };
 
         // Fetch initial data
         const fetchInitialData = async () => {
@@ -58,8 +77,12 @@ const AnalyticsSection: React.FC = () => {
 
         fetchInitialData();
 
+        // Set up interval to update chart data every 60 seconds
+        const intervalId = setInterval(updateChartData, 10000);
+
         return () => {
-            pusher.unsubscribe('analytics-channel');
+            pusher.unsubscribe('presence-channel');
+            clearInterval(intervalId);
         };
     }, []);
 
