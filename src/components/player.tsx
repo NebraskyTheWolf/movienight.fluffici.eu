@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import axios from 'axios';
 import {
@@ -14,20 +14,20 @@ import {
     FaVolumeMute,
     FaVolumeUp
 } from "react-icons/fa";
-import {OnProgressProps} from "react-player/base";
+import { OnProgressProps } from "react-player/base";
 import Tooltip from 'rc-tooltip';
 import 'rc-tooltip/assets/bootstrap.css';
 import Chat from '@/components/chat';
-import {RingLoader} from 'react-spinners';
-import {IStream} from "@/models/Stream.ts";
-import {signOut, useSession} from "next-auth/react";
-import {hasPermission} from "@/lib/utils.ts";
-import {CHAT_PERMISSION} from "@/lib/constants.ts";
+import { RingLoader } from 'react-spinners';
+import { IStream } from "@/models/Stream.ts";
+import { signOut, useSession } from "next-auth/react";
+import { hasPermission } from "@/lib/utils.ts";
+import { CHAT_PERMISSION } from "@/lib/constants.ts";
 import pusher from '../lib/pusher';
-import {showToast} from "@/components/toast.tsx";
-import {User} from "next-auth";
-import {throttle} from "lodash";
-import {useRouter} from "next/navigation";
+import { showToast } from "@/components/toast.tsx";
+import { User } from "next-auth";
+import { throttle } from "lodash";
+import { useRouter } from "next/navigation";
 import EmbedMessage from "@/components/EmbedMessage.tsx";
 import moment from "moment";
 import Event from '../models/Event.ts'
@@ -35,29 +35,27 @@ import LoadingComponent from "@/components/Loading.tsx";
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
-interface PlayerProps {
-
-}
+interface PlayerProps { }
 
 const Player: React.FC<PlayerProps> = () => {
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [isClient, setIsClient] = useState<boolean>(false);
     const [currentDuration, setCurrentDuration] = useState<string>();
     const [duration, setDuration] = useState<string>();
-    const [volume, setVolume] = useState<number>(0.5); // Default volume is 0.5 (50%)
+    const [volume, setVolume] = useState<number>(0.5); // Výchozí hlasitost je 0,5 (50 %)
     const [isMuted, setMuted] = useState<boolean>(false);
     const [hasError, setHasError] = useState<boolean>(false);
     const [showControls, setShowControls] = useState<boolean>(true);
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
-    const [showChat, setShowChat] = useState<boolean>(true); // Chat visible by default
+    const [showChat, setShowChat] = useState<boolean>(true); // Chat viditelný ve výchozím nastavení
     const [showOverlayChat, setShowOverlayChat] = useState<boolean>(false);
     const [showContentRating, setShowContentRating] = useState<boolean>(true);
-    const [loading, setLoading] = useState<boolean>(true); // Loading state
-    const [isMusicPlaying, setMusicPlaying] = useState<boolean>(false); // Music playing state
+    const [loading, setLoading] = useState<boolean>(true); // Stav načítání
+    const [isMusicPlaying, setMusicPlaying] = useState<boolean>(false); // Stav přehrávání hudby
     const [streamInfo, setStreamInfo] = useState<IStream>();
     const playerRef = useRef<HTMLDivElement>(null);
     const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
-    const audioRef = useRef<HTMLAudioElement>(null); // Ref for the audio element
+    const audioRef = useRef<HTMLAudioElement>(null); // Ref pro zvukový prvek
     const [streamUrl, setStreamUrl] = useState('');
     const [events, setEvents] = useState<Event[]>()
     const [showLatestEvent, setShowLatestEvent] = useState<boolean>(true)
@@ -70,7 +68,7 @@ const Player: React.FC<PlayerProps> = () => {
     useEffect(() => {
         setIsClient(true);
 
-        // Subscribe to Pusher events
+        // Přihlaste se k odběru událostí Pusher
         const channel = pusher.subscribe('stream-channel');
         channel.bind('start-broadcast', handleStartBroadcast);
         channel.bind('end-broadcast', handleEndBroadcast);
@@ -84,16 +82,16 @@ const Player: React.FC<PlayerProps> = () => {
 
     useEffect(() => {
         if (showContentRating) {
-            const timer = setTimeout(() => setShowContentRating(false), 5000); // Hide after 5 seconds
+            const timer = setTimeout(() => setShowContentRating(false), 5000); // Skrýt po 5 sekundách
             return () => clearTimeout(timer);
         }
     }, [showContentRating]);
 
     useEffect(() => {
         if (loading && isMusicPlaying && audioRef.current) {
-            audioRef.current.play(); // Play the music when loading starts
+            audioRef.current.play(); // Přehrávejte hudbu, když začne načítání
         } else if (audioRef.current) {
-            audioRef.current.pause(); // Pause the music when loading ends
+            audioRef.current.pause(); // Pozastavit hudbu, když načítání skončí
         }
     }, [loading, isMusicPlaying]);
 
@@ -105,7 +103,7 @@ const Player: React.FC<PlayerProps> = () => {
                 setStreamUrl(window.location.href + 'api/stream/video');
                 setHasError(false);
             } catch (error) {
-                console.error("Failed to fetch stream info", error);
+                console.error("Nepodařilo se získat informace o streamu", error);
                 setHasError(true);
                 setHasError(false);
             }
@@ -133,7 +131,7 @@ const Player: React.FC<PlayerProps> = () => {
         };
 
         fetchStreamInfo();
-        showToast("The stream just started.")
+        showToast("Stream právě začal.")
         setIsClient(false)
         setLoading(true);
         setPlayerKey(prevKey => prevKey + 1);
@@ -148,7 +146,7 @@ const Player: React.FC<PlayerProps> = () => {
         setLoading(true);
 
         window.location.reload();
-        showToast("The streaming was ended", "info")
+        showToast("Streamování bylo ukončeno", "info")
     };
 
     const formatDuration = (seconds: number) => {
@@ -175,7 +173,7 @@ const Player: React.FC<PlayerProps> = () => {
 
     const toggleMute = () => {
         setMuted(!isMuted);
-        setVolume(isMuted ? 0.5 : 0); // Restore to 50% volume when unmuting
+        setVolume(isMuted ? 0.5 : 0); // Obnovit na 50% hlasitost při zrušení ztlumení
     };
 
     const togglePlay = () => {
@@ -233,65 +231,6 @@ const Player: React.FC<PlayerProps> = () => {
         setLoading(false);
     };
 
-    const onDragEnd = () => {
-
-    }
-
-    const findLatestOnlineEvent = (): Event | null => {
-        if (!events) {
-            return null;
-        }
-
-        const now = new Date();
-        const onlineEvents = events.filter(event => event.type === 'ONLINE');
-
-        if (onlineEvents.length === 0) {
-            return null;
-        }
-
-        // sort onlineEvents by begin time descending
-        onlineEvents.sort((a, b) => new Date(b.begin).getTime() - new Date(a.begin).getTime())
-
-        const latestOnlineEvent = onlineEvents[0];
-
-        if (new Date(latestOnlineEvent.begin).getTime() > now.getTime()) {
-            return latestOnlineEvent;
-        }
-        else {
-            return null;
-        }
-    };
-
-    const getDuration = (event: Event) => {
-        if (!event) {
-            return "No upcoming online events.";
-        }
-
-        const now = moment();
-        const startTime = moment(event.begin);
-        const duration = moment.duration(startTime.diff(now));
-
-        if (duration.asSeconds() < 0) {
-            return "Started a few moments ago";
-        }
-
-        if (duration.asSeconds() < 60) {
-            return `${Math.floor(duration.asSeconds())} seconds`;
-        }
-
-        if (duration.asMinutes() < 60) {
-            return `${Math.floor(duration.asMinutes())} minutes`;
-        }
-
-        if (duration.asHours() < 24) {
-            return `${Math.floor(duration.asHours())} hours`;
-        }
-
-        return `${Math.floor(duration.asDays())} days`;
-    }
-
-    const latestEventMessage = findLatestOnlineEvent();
-
     return (
         <div ref={playerRef} className="relative flex w-full h-screen bg-black" onMouseMove={handleMouseMove} style={{ overflow: 'hidden' }}>
             {showContentRating && streamInfo && (
@@ -306,7 +245,7 @@ const Player: React.FC<PlayerProps> = () => {
             <div
                 className="absolute top-0 left-0 right-0 bottom-0 flex-1 flex items-center justify-center relative bg-black">
                 {loading && (
-                   <LoadingComponent loading={true}/>
+                    <LoadingComponent loading={true} />
                 )}
                 <div className="absolute inset-0 flex items-center justify-center">
                     {isClient && (
@@ -335,45 +274,16 @@ const Player: React.FC<PlayerProps> = () => {
                         />
                     )}
                 </div>
-                <div className="absolute top-0 left-0 p-2 text-white z-50 rounded-md w-[600px] h-[400px] mt-4 ml-4">
-                    {latestEventMessage && showLatestEvent && (
-                        <EmbedMessage embed={{
-                            color: '2ACFCF',
-                            author: {
-                                name: "Movie Scheduled",
-                                icon_url: "https://autumn.fluffici.eu/attachments/rDbkloCVPYMaCAp5gB7g80ZaSK7B2S-u4Oeawmd8Wv",
-                                url: `https://akce.fluffici.eu/event?id=${latestEventMessage.event_id}`
-                            },
-                            title: latestEventMessage.name!,
-
-                            description: latestEventMessage?.descriptions!,
-                            fields: [
-                                {
-                                    name: 'Starting in',
-                                    value: `${getDuration(latestEventMessage!)}`,
-                                    inline: true
-                                }
-                            ],
-                            image: {
-                                url: `https://autumn.fluffici.eu/banners/${latestEventMessage?.banner_id}`
-                            },
-                            footer: {
-                                text: 'FluffBOT',
-                                icon_url: 'https://cdn.discordapp.com/app-icons/1090193884782526525/1aed19e69224aeb09df782a3285e5e6a.png'
-                            }
-                        }} key={'incoming'} isLowOpacity={true}/>
-                    )}
-                </div>
                 <div
                     className={`absolute bottom-0 left-0 right-0 p-2 md:p-4 bg-gray-900 bg-opacity-75 text-white transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2 md:space-x-4">
                             <div className="relative flex items-center">
                                 <button className="p-2 md:p-4 text-xl md:text-2xl rounded" onClick={togglePlay}>
-                                    {isPlaying ? <FaPause/> : <FaPlay/>}
+                                    {isPlaying ? <FaPause /> : <FaPlay />}
                                 </button>
                                 <button className="p-2 md:p-4 text-xl md:text-2xl rounded" onClick={toggleMute}>
-                                    {isMuted ? <FaVolumeMute/> : <FaVolumeUp/>}
+                                    {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
                                 </button>
                                 {showControls && (
                                     <div className="relative flex items-center">
@@ -401,31 +311,34 @@ const Player: React.FC<PlayerProps> = () => {
                         <div className="flex items-center space-x-2 md:space-x-4">
                             <Tooltip overlay="Chat" placement="top">
                                 <button className="p-2 md:p-4 text-xl md:text-2xl rounded" onClick={toggleChat}>
-                                    <FaComments/>
+                                    <FaComments />
                                 </button>
                             </Tooltip>
 
                             {session?.profile && hasPermission(session.profile, CHAT_PERMISSION.MODERATION_DASHBOARD) && (
-                                <Tooltip overlay="Moderation view" placement="top">
+                                <Tooltip overlay="Zobrazení moderování" placement="top">
                                     <button className="p-2 md:p-4 text-xl md:text-2xl rounded"
                                             onClick={() => router.push("/dashboard")}>
-                                        <FaCogs className="text-yellow-200"/>
+                                        <FaCogs className="text-yellow-200" />
                                     </button>
                                 </Tooltip>
                             )}
 
                             {session && (
-                                <Tooltip overlay="Log out" placement="top">
+                                <Tooltip overlay="Odhlásit se" placement="top">
                                     <button className="p-2 md:p-4 text-xl md:text-2xl rounded"
-                                            onClick={() => signOut({ callbackUrl: window.location.href, redirect: false })}>
-                                        <FaUserLock className="text-red-500"/>
+                                            onClick={() => signOut({
+                                                callbackUrl: window.location.href,
+                                                redirect: false
+                                            })}>
+                                        <FaUserLock className="text-red-500" />
                                     </button>
                                 </Tooltip>
                             )}
 
-                            <Tooltip overlay={isFullScreen ? "Exit Fullscreen" : "Fullscreen"} placement="top">
+                            <Tooltip overlay={isFullScreen ? "Ukončit režim celé obrazovky" : "Režim celé obrazovky"} placement="top">
                                 <button className="p-2 md:p-4 text-xl md:text-2xl rounded" onClick={handleFullScreen}>
-                                    {isFullScreen ? <FaCompress/> : <FaExpand/>}
+                                    {isFullScreen ? <FaCompress /> : <FaExpand />}
                                 </button>
                             </Tooltip>
                         </div>
@@ -433,12 +346,14 @@ const Player: React.FC<PlayerProps> = () => {
                 </div>
             </div>
             {showChat && !isFullScreen && (
-                <div className="hidden md:block w-1/4 h-full bg-gray-900">
-                    <Chat streamId={streamInfo?.streamId}/>
+                <div className="hidden md:block w-1/4 h-full bg-gray-900 z-40 relative">
+                    <Chat streamId={streamInfo?.streamId} />
                 </div>
             )}
             {showOverlayChat && isFullScreen && (
-                <Chat streamId={streamInfo?.streamId} isOverlay={true} />
+                <div className="absolute top-0 right-0 bottom-0 z-50 w-1/4 h-full bg-opacity-90">
+                    <Chat streamId={streamInfo?.streamId} isOverlay={true} />
+                </div>
             )}
         </div>
     );
