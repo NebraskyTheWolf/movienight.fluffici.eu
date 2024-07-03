@@ -637,7 +637,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                             />
                                         </div>
                                     ) : message.type === 'command' ? (
-                                        <div className="relative pl-12">
+                                        <div className="relative mt-2">
                                             <div className="flex items-center space-x-2 mb-2">
                                                 <img
                                                     src={getAvatarsIconUrl(message.author)}
@@ -645,25 +645,30 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                                     className="w-8 h-8 rounded-full cursor-pointer"
                                                     onClick={() => handleUserClick(message.author)}
                                                 />
-                                                <span className="font-bold text-indigo-500 cursor-pointer"
-                                                      onClick={() => handleUserClick(message.author)}>
+                                                <span
+                                                    className="font-bold text-indigo-500 cursor-pointer"
+                                                    onClick={() => handleUserClick(message.author)}
+                                                >
                                                     {message.author!.name}
                                                 </span>
                                                 <span className="text-gray-400">used</span>
-                                                <span
-                                                    className="bg-blue-600 text-white px-2 py-1 rounded">{message.command}</span>
+                                                <span className="bg-blue-600 text-white px-2 py-1 rounded">
+                                                    {message.command}
+                                                </span>
                                             </div>
-                                            <div className="relative">
+                                            <div className="ml-8 relative">
                                                 <div
-                                                    className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
-                                                {message.embeds && message.embeds.map((embed, i) => (
-                                                    <EmbedMessage key={i} embed={embed}/>
-                                                ))}
+                                                    className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"
+                                                ></div>
+                                                {message.embeds &&
+                                                    message.embeds.map((embed, i) => (
+                                                        <EmbedMessage key={i} embed={embed}/>
+                                                    ))}
                                             </div>
                                         </div>
                                     ) : message.type === 'bot' ? (
-                                        <div className="relative pl-12">
-                                            <div className="relative">
+                                        <div className="relative mt-2">
+                                            <div className="ml-8 relative">
                                                 <div
                                                     className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
                                                 {message.embeds && message.embeds.map((embed, i) => (
@@ -672,8 +677,8 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                             </div>
                                         </div>
                                     ) : message.type === 'reply' ? (
-                                        <div className="relative">
-                                            <div className="ml-10 relative border-l-4 border-gray-600 pl-4">
+                                        <div className="relative mt-2">
+                                            <div className="ml-8 relative border-l-4 border-gray-600">
                                                 {message.repliedMessage ? (
                                                     <div className="mb-2 bg-gray-800 p-2 rounded">
                                                         <div className="flex items-center space-x-2">

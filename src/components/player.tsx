@@ -275,7 +275,7 @@ const Player: React.FC<PlayerProps> = () => {
                     )}
                 </div>
                 <div
-                    className={`absolute bottom-0 left-0 right-0 p-2 md:p-4 bg-gray-900 bg-opacity-75 text-white transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+                    className={`absolute bottom-0 left-0 right-0 p-2 md:p-4 bg-gray-900 bg-opacity-75 text-white transition-opacity duration-300 z-50 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2 md:space-x-4">
                             <div className="relative flex items-center">
@@ -351,7 +351,7 @@ const Player: React.FC<PlayerProps> = () => {
                 </div>
             )}
             {showOverlayChat && isFullScreen && (
-                <div className="absolute top-0 right-0 bottom-0 z-50 w-1/4 h-full bg-opacity-90">
+                <div className="absolute top-0 right-0 bottom-0 z-40 w-1/4 h-full bg-opacity-90">
                     <Chat streamId={streamInfo?.streamId} isOverlay={true} />
                 </div>
             )}
