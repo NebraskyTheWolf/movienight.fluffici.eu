@@ -292,6 +292,8 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
 
         setShowGifPicker(false);
+        // Trigger scrollDown after the user sent a message
+        triggerScrollDown()
     }, [user]);
 
     const {show} = useContextMenu({
@@ -391,7 +393,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     };
 
     const handleEmojiClick = (emojiObject: any, event: any) => {
-        setContent(emojiObject.native);
+        setContent(content + emojiObject.native);
         setShowEmojiPicker(false)
     };
 
