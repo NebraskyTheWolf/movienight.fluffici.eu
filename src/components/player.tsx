@@ -298,7 +298,7 @@ const Player: React.FC<PlayerProps> = () => {
                 <div className="absolute top-4 left-4 p-2 text-white z-50 rounded-md flex flex-col border-l-4 border-pink-600">
                     <div className="flex items-center">
                         <div className="w-1 bg-red-600 h-full mr-2"></div>
-                        <h2 className="text-lg font-bold">RATED {streamInfo.contentRating.age}+</h2>
+                        <h2 className="text-lg font-bold">VĚKOVÉ HODNOCENÍ {streamInfo.contentRating.age}+</h2>
                     </div>
                     <p className="mt-1 text-sm text-center">{streamInfo.contentRating.reason}</p>
                 </div>

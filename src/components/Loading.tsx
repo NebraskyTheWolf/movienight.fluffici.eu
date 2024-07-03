@@ -3,17 +3,17 @@ import { RingLoader } from 'react-spinners';
 
 // @ts-ignore
 const LoadingComponent = ({ loading }) => {
-    const [message, setMessage] = useState('Loading, please wait...');
+    const [message, setMessage] = useState('Načítání, prosím, čekejte...');
 
     useEffect(() => {
         const timers: NodeJS.Timeout[] = [];
 
         if (loading) {
-            timers.push(setTimeout(() => setMessage('This is taking longer than usual...'), 10000));
-            timers.push(setTimeout(() => setMessage('Still loading, hang tight...'), 30000));
-            timers.push(setTimeout(() => setMessage('Sorry for the delay, almost there...'), 60000));
+            timers.push(setTimeout(() => setMessage('Trvá to trochu déle než obvykle.'), 10000));
+            timers.push(setTimeout(() => setMessage('Stále se to načítá, vydržte...'), 30000));
+            timers.push(setTimeout(() => setMessage('Omlouváme se za zpoždění, už to bude...'), 60000));
         } else {
-            setMessage('Loading, please wait...');
+            setMessage('Načítání, prosím, čekejte...');
         }
 
         return () => {

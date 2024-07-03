@@ -1,14 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Pusher from 'pusher';
-import { CHAT_PERMISSION } from '@/lib/constants';
+import {CHAT_PERMISSION, USER_FLAGS} from '@/lib/constants';
 import {hasPermission} from "@/lib/utils.ts";
 import connectToDatabase from "@/lib/mongodb.ts";
 import Stream from "@/models/Stream.ts";
-import {getServerSession, User} from "next-auth";
+import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 import Message from "@/models/Message.ts";
 import ChatSettings from "@/models/ChatSettings.ts";
-import { EmbedMessage } from "@/lib/types.ts";
+import Redis from "ioredis";
+import Profile from "@/models/Profile.ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -17,6 +18,8 @@ const pusher = new Pusher({
     cluster: process.env.PUSHER_CLUSTER!,
     useTLS: true,
 });
+
+const redis = new Redis(process.env.REDIS_URL!);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "POST")
@@ -80,6 +83,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (isContentBlacklisted)
         return res.status(200).json({ status: false, error: 'Your message contains blacklisted words' });
+
+    const key = await redis.get("live-key");
+
+    if (key) {
+        const requestingUser = await Profile.findOne({ discordId: session.user.id });
+        if (requestingUser && requestingUser.streamKey === key) {
+            profile.flags = USER_FLAGS.HOST
+        }
+    }
 
     try {
         const newMessage = new Message({

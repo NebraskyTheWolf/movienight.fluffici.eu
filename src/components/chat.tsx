@@ -163,7 +163,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         channel.bind(DELETE_MESSAGE_EVENT, (data: { id: string }) => {
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
-                    msg._id === data.id ? {...msg, content: 'The message has been deleted'} : msg
+                    msg._id === data.id ? {...msg, content: 'Zpráva byla smazána'} : msg
                 )
             );
         });
@@ -171,7 +171,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         channel.bind(PERMISSION_CHANGED_EVENT, (data: { id: string, permissions: number }) => {
             if (user && data.id === user.id) {
                 update({...session, profile: {...user, permissions: data.permissions}});
-                showToast("Your permissions have been updated.", "info");
+                showToast("Vaše oprávnění byla aktualizována.", "info");
             }
         });
 
@@ -185,14 +185,14 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
         channel.bind(USER_MUTED_EVENT, (data: { id: string }) => {
             if (user && data.id === user.id) {
-                setWarningMessage("You have been muted for breaking the rules.");
+                setWarningMessage("Byli jste ztišeni za porušení pravidel.");
                 setShowWarning(true);
             }
         });
 
         channel.bind(BANNED_USER_EVENT, (data: { id: string }) => {
             if (user && data.id === user.id) {
-                setWarningMessage("You have been banned for breaking the rules.");
+                setWarningMessage("Byli jste zabanováni za porušení pravidel.");
                 setShowWarning(true);
             }
         });
@@ -774,7 +774,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                 <input
                                     type="text"
                                     className="flex-1 p-2 bg-gray-700 border-none outline-none"
-                                    placeholder="Type a message..."
+                                    placeholder="Napište zprávu..."
                                     value={content}
                                     onChange={handleEmojiInput}
                                     onKeyDown={(e) => {
@@ -872,22 +872,22 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                             )}
                         </div>
                     ) : (
-                        <p className="text-center">You are restricted from sending messages.</p>
+                        <p className="text-center">Nemáte povoleno odesílat zprávy.</p>
                     )
                 ) : !isChatEnabled ? (
                     <div className="flex flex-col items-center justify-center p-4 border-t border-pink-600">
-                        <p className="mb-4 text-center">The chat was disabled by a administrator.</p>
+                        <p className="mb-4 text-center">Chat byl deaktivován administrátorem.</p>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center p-4 border-t border-pink-600">
-                        <p className="mb-4 text-center">Please log in to send messages.</p>
+                        <p className="mb-4 text-center">Pro odesílání zpráv se prosím přihlaste.</p>
                         <Button
                             variant="outline"
                             onClick={() => signIn('discord', {callbackUrl: window.location.href})}
                         >
                             <div className="flex space-x-3 items-center">
                                 <FaDiscord/>
-                                <p>Log in</p>
+                                <p>Přihlásit</p>
                             </div>
                         </Button>
                     </div>
@@ -895,16 +895,16 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             </div>
             <Menu id="context-menu">
                 {profile && hasPermission(profile, CHAT_PERMISSION.DELETE_MESSAGE) && (
-                    <Item onClick={({props}) => handleDeleteMessage(props.message._id)}> <FaTrash/> Delete</Item>
+                    <Item onClick={({props}) => handleDeleteMessage(props.message._id)}> <FaTrash/> Smazat zprávu</Item>
                 )}
                 {profile && hasPermission(profile, CHAT_PERMISSION.BAN_USER) && (
-                    <Item onClick={({props}) => handleBanUser(props.message)}><FaBan/> Ban User</Item>
+                    <Item onClick={({props}) => handleBanUser(props.message)}><FaBan/> Zabanovat uživatele</Item>
                 )}
                 {profile && hasPermission(profile, CHAT_PERMISSION.MUTE_USER) && (
-                    <Item onClick={({props}) => handleMuteUser(props.message)}><FaUserLock/> Mute User</Item>
+                    <Item onClick={({props}) => handleMuteUser(props.message)}><FaUserLock/> Ztišit uživatele</Item>
                 )}
                 {profile && hasPermission(profile, CHAT_PERMISSION.REPLY_MESSAGE) && (
-                    <Item onClick={({props}) => handleReplyMessage(props.message)}><FaReply/> Reply</Item>
+                    <Item onClick={({props}) => handleReplyMessage(props.message)}><FaReply/> Odpovědět</Item>
                 )}
             </Menu>
             <ExternalRedirect isOpen={isDialogOpen} url={externalUrl}/>
