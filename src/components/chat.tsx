@@ -443,8 +443,8 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
     const handleEmojiSuggestionClick = (emoji: string) => {
         if (inputRef.current) {
-            const lastColonIndex = content.lastIndexOf(':');
-            const newText = content.slice(0, lastColonIndex) + emoji + ' ';
+            const lastAtSymbolIndex = content.lastIndexOf('@');
+            const newText = content.slice(0, lastAtSymbolIndex) + emoji + ' ';
             setContent(newText);
             setEmojiSuggestions([]);
         }
