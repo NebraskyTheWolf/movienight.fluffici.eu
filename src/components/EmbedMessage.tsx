@@ -13,7 +13,7 @@ interface EmbedMessageProps {
 
 const EmbedMessage: React.FC<EmbedMessageProps> = ({ embed, isLowOpacity }) => {
     return (
-        <div className={isLowOpacity ? 'p-4 mb-4 bg-gray-800 rounded-md border-l-4 opacity-80' : 'p-4 mb-4 bg-gray-800 rounded-md border-l-4'} style={{ borderColor: `#${embed.color}` }}>
+        <div className={`p-4 mb-4 bg-gray-800 rounded-md border-l-4 ${isLowOpacity ? 'opacity-80' : ''}`} style={{ borderColor: `#${embed.color}` }}>
             {embed.author && (
                 <div className="flex items-center mb-2">
                     {embed.author.icon_url && (
@@ -44,7 +44,7 @@ const EmbedMessage: React.FC<EmbedMessageProps> = ({ embed, isLowOpacity }) => {
             {embed.fields && (
                 <div className="flex flex-wrap mb-2">
                     {embed.fields.map((field, index) => (
-                        <div key={index} className={`flex-1 min-w-[200px] mr-2 ${field.inline ? 'inline-block' : ''}`}>
+                        <div key={index} className={`flex-1 min-w-[200px] mr-2 ${field.inline ? 'inline-block' : 'block'}`}>
                             <div className="font-bold text-gray-300">{field.name}</div>
                             <div className="text-gray-300">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>

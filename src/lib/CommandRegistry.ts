@@ -119,24 +119,4 @@ export default function registerCommands(slashCommandManager: SlashCommandManage
         },
         permissions: addPermissions()
     });
-
-    slashCommandManager.registerCommand({
-        name: 'test',
-        description: 'Test command with options',
-        execute: async (args) => {
-            return {
-                embeds: [],
-                ephemeral: false,
-            };
-        },
-        permissions: addPermissions(),
-        options: [
-            {
-                name: 'enabled',
-                description: 'Is enabled?',
-                type: 'BOOLEAN',
-                required: true
-            }
-        ]
-    });
 }

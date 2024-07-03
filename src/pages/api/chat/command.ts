@@ -32,6 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'POST') {
         const { command } = req.body
+        if (!command)
+            return res.status(400).json({ status: false, error: 'Command is required' });
 
         const handle = commandManager.getCommand(command)
 
@@ -56,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             reactions: []
         }
 
-        const type = 'bot'
+        const type = 'command'
         const user: User = {
             id: '1090193884782526525',
             name: 'FluffBOT',
@@ -94,8 +96,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             await pusher.trigger('presence-chat-channel', 'new-message', {
                 id,
                 content,
+                command,
                 type,
                 user,
+                author,
                 profile,
                 timestamp,
                 reactions,

@@ -120,6 +120,22 @@ const Player: React.FC<PlayerProps> = () => {
         fetchStreamInfo();
     }, []);
 
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.code === "Space") {
+                event.preventDefault(); // Prevent default behavior of space key (e.g., scrolling)
+                togglePlay();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isPlaying]);
+
     const handleStartBroadcast = (data: User) => {
         setLoading(true);
         const fetchStreamInfo = async () => {

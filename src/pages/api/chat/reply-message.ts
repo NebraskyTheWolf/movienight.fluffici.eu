@@ -61,7 +61,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const repliedMessage = await Message.findOne({ _id: messageId })
-
     const chatSettings = await ChatSettings.findOne({ _id: '668348b752dc60219a0aa9fe' })
 
     let isContentBlacklisted = false;
@@ -98,7 +97,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
         const data = await newMessage.save();
-
         const id = data._id;
 
         await pusher.trigger('presence-chat-channel', 'new-message', {

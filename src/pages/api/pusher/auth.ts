@@ -30,8 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const presenceData = {
         user_id: session.user.id,
         user_info: {
-            ...session.user,
-            ...session.profile
+            ...session.user
         }
     };
 

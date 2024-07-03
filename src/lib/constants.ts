@@ -28,4 +28,14 @@ export const USER_FLAGS = {
     BOT: 1 << 5
 }
 
+export const SYSTEM_MESSAGE_TYPE = {
+    USER_JOINED: 1 << 0,
+    USER_LEFT: 1 << 2,
+    USER_WELCOME: 1 << 3,
+    USER_MUTED: 1 << 4,
+    USER_BANNED: 1 << 5,
+    POLLS: 1 << 6,
+    ANNOUNCEMENT: 1 << 7,
+}
+
 export const USE_GIPHY = Boolean(process.env.GIPHY_ENABLED);

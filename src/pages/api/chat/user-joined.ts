@@ -2,7 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Pusher from 'pusher';
 import {v4} from "uuid";
 import Redis from "ioredis";
-import {getSession} from "next-auth/react";
 import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 

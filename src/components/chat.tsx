@@ -8,7 +8,7 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import GifPicker, { ContentFilter, TenorImage, Theme } from 'gif-picker-react';
-import { CHAT_PERMISSION, USER_FLAGS } from '../lib/constants';
+import {CHAT_PERMISSION, SYSTEM_MESSAGE_TYPE, USER_FLAGS} from '../lib/constants';
 import { getAvatarsIconUrl, hasPermission } from '../lib/utils';
 import { showToast } from "@/components/toast";
 import {
@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/button.tsx";
 import { IProfile } from "@/models/Profile.ts";
 import { IMessage } from "@/models/Message.ts";
-import {FaBots, FaFaceSmile, FaMessage, FaRobot, FaShield} from 'react-icons/fa6';
+import {FaFaceSmile, FaMessage, FaRobot, FaShield} from 'react-icons/fa6';
 import pusher from "@/lib/pusher.ts";
 import ExternalRedirect from './redirect';
 import { Embed } from './embed';
@@ -39,8 +39,6 @@ import {hasPermissions} from "@/lib/permission.ts";
 import LoadingComponent from "@/components/Loading.tsx";
 
 import DraggableCore, {ControlPosition} from "react-draggable"
-import {v4} from "uuid";
-
 const CHANNEL_NAME = 'presence-chat-channel';
 const NEW_MESSAGE_EVENT = 'new-message';
 const REACT_MESSAGE_EVENT = 'react-message';
@@ -48,6 +46,7 @@ const DELETE_MESSAGE_EVENT = 'delete-message';
 const PERMISSION_CHANGED_EVENT = 'permission_changed';
 const USER_MUTED_EVENT = 'user-muted';
 const BANNED_USER_EVENT = 'banned-user';
+const WELCOME_EVENT = 'welcome';
 
 interface ChatProps {
     streamId?: string;
@@ -55,6 +54,7 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
+    const [isChatEnabled, setIsChatEnabled] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [externalUrl, setExternalUrl] = useState<string>("");
     const [reason, setReason] = useState<string>("");
@@ -76,25 +76,20 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     const [commandOptions, setCommandOptions] = useState<ApplicationCommandOption[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
     const [activeMessage, setActiveMessage] = useState<IMessage | null>();
-    const { data: session, status, update } = useSession();
+    const {data: session, status, update} = useSession();
     const messageListRef = useRef<HTMLDivElement>(null); // Add a ref for the message list
 
     const user = session?.user;
 
     // @ts-ignore
-    const HighlightUserMention = ({ user, message }) => {
+    const HighlightUserMention = ({user, message}) => {
         const username = user?.name;
         const regex = new RegExp(`@${username}\\b`, 'g');
 
-        const messageHtml = { __html: message.content.replace(regex, `<span style='color:gold'>@${username}</span>`) };
+        const messageHtml = {__html: message.content.replace(regex, `<span style='color:gold'>@${username}</span>`)};
 
-        return <div dangerouslySetInnerHTML={messageHtml} />;
+        return <div dangerouslySetInnerHTML={messageHtml}/>;
     }
-
-    const fetchGifs = async (offset: number) => {
-        const response = await axios.get(`/api/chat/fetch-giphy?offset=${offset}&limit=10`);
-        return response.data;
-    };
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -102,27 +97,31 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                 const response = await axios.get('/api/chat/messages-ack');
                 setMessages(response.data.messages);
                 setIsLoading(false);
-            } catch (error) { }
+            } catch (error) {
+            }
         };
 
         const fetchProfile = async () => {
             try {
                 const response = await axios.get('/api/fetch-user');
                 setProfile(response.data);
-            } catch (error) { }
+            } catch (error) {
+            }
         }
 
         const sendSystemMessage = async () => {
             try {
                 await axios.post('/api/chat/user-joined');
-            } catch (error) { }
+            } catch (error) {
+            }
         }
 
         const fetchCommands = async () => {
             try {
                 const response = await axios.get('/api/chat/command');
                 setCommands(response.data.commands)
-            } catch (error) { }
+            } catch (error) {
+            }
         }
 
         const isBanned = async () => {
@@ -130,13 +129,24 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                 const response = await axios.get('/api/chat/is-banned');
                 setWarningMessage(`You have been banned for breaking the rules.`);
                 setShowWarning(response.data.status);
-            } catch (error) { }
+            } catch (error) {
+            }
+        }
+
+        const isChatEnabled = async () => {
+            try {
+                const response = await axios.get('/api/chat/is-enabled');
+                setIsChatEnabled(response.data.enabled);
+            } catch (error) {
+                setIsChatEnabled(false)
+            }
         }
 
         if (user) {
             sendSystemMessage();
         }
 
+        isChatEnabled()
         fetchCommands()
         fetchMessages();
         fetchProfile();
@@ -153,14 +163,14 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         channel.bind(DELETE_MESSAGE_EVENT, (data: { id: string }) => {
             setMessages((prevMessages) =>
                 prevMessages.map((msg) =>
-                    msg._id === data.id ? { ...msg, content: 'The message has been deleted' } : msg
+                    msg._id === data.id ? {...msg, content: 'The message has been deleted'} : msg
                 )
             );
         });
 
         channel.bind(PERMISSION_CHANGED_EVENT, (data: { id: string, permissions: number }) => {
             if (user && data.id === user.id) {
-                update({ ...session, profile: { ...user, permissions: data.permissions } });
+                update({...session, profile: {...user, permissions: data.permissions}});
                 showToast("Your permissions have been updated.", "info");
             }
         });
@@ -168,7 +178,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         channel.bind(REACT_MESSAGE_EVENT, (data: { messageId: string, reactions: [] }) => {
             setMessages((prevMessages) =>
                 prevMessages.map(msg =>
-                    msg._id === data.messageId ? { ...msg, reactions: data.reactions } : msg
+                    msg._id === data.messageId ? {...msg, reactions: data.reactions} : msg
                 )
             );
         });
@@ -202,12 +212,20 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             setUsers((prevUsers) => prevUsers.filter((user) => user.id !== member.id));
         });
 
+        channel.bind(WELCOME_EVENT, async (data: { user: User }) => {
+            await axios.post('/api/chat/send-system-message', {
+                target: data.user,
+                systemType: SYSTEM_MESSAGE_TYPE.USER_WELCOME
+            });
+        })
+
         return () => {
             channel.unbind(NEW_MESSAGE_EVENT);
             channel.unbind(DELETE_MESSAGE_EVENT);
             channel.unbind(PERMISSION_CHANGED_EVENT);
             channel.unbind(USER_MUTED_EVENT);
             channel.unbind(BANNED_USER_EVENT);
+            channel.unbind(WELCOME_EVENT);
             channel.unbind('pusher:subscription_succeeded');
             channel.unbind('pusher:member_added');
             channel.unbind('pusher:member_removed');
@@ -216,7 +234,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     }, [session, user, update]);
 
     const handleCommand = async (command: { name: string; description: string }) => {
-        const response = await axios.post(`/api/chat/command`, { command: command.name });
+        const response = await axios.post(`/api/chat/command`, {command: command.name});
 
         if (!response.data.status) {
             showToast(response.data.error, "error")
@@ -234,10 +252,13 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
 
         if (content.length <= 0) return;
-        let result: Message = { content };
+        let result: Message = {content};
 
         if (replyTo) {
-            const response = await axios.post(`/api/chat/reply-message`, { content: result.content, messageId: replyTo._id });
+            const response = await axios.post(`/api/chat/reply-message`, {
+                content: result.content,
+                messageId: replyTo._id
+            });
 
             if (response.data.status) {
                 setContent('');
@@ -246,7 +267,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                 showToast(response.data.error, "error")
             }
         } else {
-            const response = await axios.post(`/api/chat/send-message`, { content: result.content, type });
+            const response = await axios.post(`/api/chat/send-message`, {content: result.content, type});
 
             if (response.data.status) {
                 setContent('');
@@ -255,9 +276,9 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                 showToast(response.data.error, "error")
             }
         }
+        // Trigger scrollDown after the user sent a message
+        triggerScrollDown()
     }, [content, user]);
-
-
 
     const handleSendGif = useCallback(async (gifUrl: TenorImage) => {
         if (!user) {
@@ -265,7 +286,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             return;
         }
 
-        const response = await axios.post(`/api/chat/send-message`, { content: gifUrl.url, type: 'gif' });
+        const response = await axios.post(`/api/chat/send-message`, {content: gifUrl.url, type: 'gif'});
         if (!response.data.status) {
             showToast(response.data.error, "error")
         }
@@ -273,7 +294,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         setShowGifPicker(false);
     }, [user]);
 
-    const { show } = useContextMenu({
+    const {show} = useContextMenu({
         id: 'context-menu'
     });
 
@@ -287,7 +308,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         });
     };
 
-    const findCommand = (query: string) =>  {
+    const findCommand = (query: string) => {
         return commands.filter(command =>
             command.name.startsWith(query) &&
             hasPermissions(session?.profile.permissions! || 0, command.permissions || 0)
@@ -296,12 +317,12 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
     const handleDeleteMessage = async (messageId: string) => {
         try {
-            const response = await axios.post(`/api/chat/moderation/delete`, { messageId });
+            const response = await axios.post(`/api/chat/moderation/delete`, {messageId});
 
             if (response.status === 200) {
                 setMessages((prevMessages) =>
                     prevMessages.map((msg) =>
-                        msg._id === messageId ? { ...msg, content: 'The message has been deleted' } : msg
+                        msg._id === messageId ? {...msg, content: 'The message has been deleted'} : msg
                     )
                 );
             } else {
@@ -314,7 +335,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
     const handleMuteUser = async (message: IMessage) => {
         try {
-            const response = await axios.post(`/api/chat/moderation/mute`, { userId: message.user.id });
+            const response = await axios.post(`/api/chat/moderation/mute`, {userId: message.user.id});
             if (response.data.status) {
                 showToast(`${message.user.name} has been muted`);
             } else {
@@ -327,7 +348,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
     const handleBanUser = async (message: IMessage) => {
         try {
-            const response = await axios.post(`/api/chat/moderation/ban`, { userId: message.user.id, reason });
+            const response = await axios.post(`/api/chat/moderation/ban`, {userId: message.user.id, reason});
             if (response.data.status) {
                 showToast(`${message.user.name} has been banned for ${reason}`);
                 setReason("");
@@ -358,10 +379,10 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
 
     const renderBadges = (flags: number = 0) => {
         const badges = [];
-        if (flags & USER_FLAGS.VIEWER) badges.push(<FaUser className="text-cyan-400" key="viewer" />);
-        if (flags & USER_FLAGS.MODERATOR) badges.push(<FaShield className="text-red-500" key="moderator" />);
-        if (flags & USER_FLAGS.HOST) badges.push(<FaCrown className="text-yellow-200" key="host" />);
-        if (flags & USER_FLAGS.BOT) badges.push(<FaRobot className="text-green-400" key="bot" />);
+        if (flags & USER_FLAGS.VIEWER) badges.push(<FaUser className="text-cyan-400" key="viewer"/>);
+        if (flags & USER_FLAGS.MODERATOR) badges.push(<FaShield className="text-red-500" key="moderator"/>);
+        if (flags & USER_FLAGS.HOST) badges.push(<FaCrown className="text-yellow-200" key="host"/>);
+        if (flags & USER_FLAGS.BOT) badges.push(<FaRobot className="text-green-400" key="bot"/>);
         return badges;
     };
 
@@ -375,7 +396,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     };
 
     const handleEmojiInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const { value } = event.target;
+        const {value} = event.target;
         setContent(value);
 
         if (value.startsWith('/')) {
@@ -427,18 +448,34 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
     };
 
-    const renderEmojiReactions = (reactions: { emoji: string, users: User[] }[] = []) => {
+    const isReacting = (updatedMessage: IMessage) => {
+        let isReacting = false;
+        updatedMessage.reactions.forEach((value, index) => {
+            value.users.forEach(value1 => {
+                if (value1.id === session?.user.id)
+                    isReacting = true
+            })
+        })
+
+        return isReacting
+    }
+
+    const renderEmojiReactions = (message: IMessage, reactions: { emoji: string, users: User[] }[] = []) => {
         return reactions.map(reaction => (
-            <div key={reaction.emoji} className="flex items-center mt-2" onClick={() => handleReactionClick(reaction.emoji)}>
-                <span dangerouslySetInnerHTML={{ __html: reaction.emoji }} />
-                <span className="ml-1">{reaction.users.length}</span>
-                <div className="flex -space-x-2 ml-2">
+            <div
+                key={reaction.emoji}
+                className={`flex items-center p-1 text-white rounded-full hover:bg-gray-600 transition-colors duration-200 cursor-pointer w-28 ${isReacting(message) ? 'bg-amber-400' : 'bg-gray-800'}`}
+                onClick={() => handleReactionClick(message, reaction)}
+            >
+                <span className="flex items-center justify-center w-4 h-4 text-sm" dangerouslySetInnerHTML={{ __html: reaction.emoji }} />
+                <span className="ml-1 text-sm">{reaction.users.length}</span>
+                <div className="flex -space-x-4 ml-1">
                     {reaction.users.map(user => (
                         <img
                             key={user.id}
                             src={getAvatarsIconUrl(user)}
                             alt={user.name!}
-                            className="w-6 h-6 rounded-full border-2 border-white"
+                            className="w-8 h-8 rounded-full"
                         />
                     ))}
                 </div>
@@ -460,34 +497,41 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         return message.match(urlRegex);
     };
 
-    const handleReactionClick = (emojiObject: any) => {
-        if (activeMessage) {
-            const emoji = emojiObject;
-            const updatedMessage = { ...activeMessage };
-            const reactionIndex = updatedMessage.reactions.findIndex((r: { emoji: any; }) => r.emoji === emoji);
-
-            if (reactionIndex !== -1) {
-                const userIndex = updatedMessage.reactions[reactionIndex].users.findIndex((u: { id: string; }) => u.id === user?.id);
-                if (userIndex === -1) {
-                    updatedMessage.reactions[reactionIndex].users.push(user!);
-                } else {
-                    updatedMessage.reactions[reactionIndex].users.splice(userIndex, 1);
-                }
-            } else {
-                updatedMessage.reactions = [...(updatedMessage.reactions || []), { emoji, users: [user!] }];
-            }
-
-            setMessages(prevMessages =>
-                prevMessages.map(msg => msg._id === updatedMessage._id ? updatedMessage : msg)
-            );
-
-            axios.post('/api/chat/react-message', { messageId: activeMessage._id, user, emoji });
-            setShowEmojiPicker(false);
-            setActiveMessage(null)
+    const handleReactionClick = async (updatedMessage: IMessage, emojiObject: { emoji: string; users: User[] }) => {
+        if (status !== "authenticated") {
+            showToast("You need to be logged in to react this message", "error")
+            return
         }
+
+        const emoji = emojiObject.emoji;
+        const reactionIndex = updatedMessage.reactions.findIndex((r: { emoji: any; }) => r.emoji === emoji);
+
+        if (reactionIndex !== -1) {
+            const userIndex = updatedMessage.reactions[reactionIndex].users.findIndex((u: {
+                id: string;
+            }) => u.id === user?.id);
+            if (userIndex === -1) {
+                updatedMessage.reactions[reactionIndex].users.push(user!);
+            } else {
+                updatedMessage.reactions[reactionIndex].users.splice(userIndex, 1);
+            }
+        } else {
+            updatedMessage.reactions = [...(updatedMessage.reactions || []), {emoji, users: [user!]}];
+        }
+
+        setMessages(prevMessages =>
+            prevMessages.map(msg => msg._id === updatedMessage._id ? updatedMessage : msg)
+        );
+
+        await axios.post('/api/chat/react-message', {messageId: updatedMessage._id, user, emoji});
+        setShowEmojiPicker(false);
     };
 
     useEffect(() => {
+        triggerScrollDown()
+    }, [messages, isLoading]);
+
+    const triggerScrollDown = () => {
         const messageList = messageListRef.current;
         if (messageList) {
             const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 1;
@@ -497,7 +541,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                 messageList.scrollTop = messageList.scrollHeight;
             }
         }
-    }, [messages, isLoading]);
+    }
 
     return (
         <>
@@ -506,7 +550,8 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                     <div className="bg-white p-8 rounded shadow-lg text-center">
                         <h2 className="text-2xl font-bold mb-4 text-red-500">Warning</h2>
                         <p className="mb-4 text-black">{warningMessage}</p>
-                        <button onClick={() => signOut({ callbackUrl: window.location.href, redirect: false })} className="px-4 py-2 bg-red-500 text-white rounded">
+                        <button onClick={() => signOut({callbackUrl: window.location.href, redirect: false})}
+                                className="px-4 py-2 bg-red-500 text-white rounded">
                             Close
                         </button>
                     </div>
@@ -517,319 +562,335 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                     className="fixed top-4 right-4 z-50 text-white p-2 rounded md:hidden"
                     onClick={toggleCollapse}
                 >
-                    {isCollapsed && <FaMessage />}
+                    {isCollapsed && <FaMessage/>}
                 </button>
             )}
-
-            <DraggableCore disabled={!isOverlay}>
-                <div className={`fixed ${isOverlay ? 'top-4 left-4 w-[600px] h-[380px] bg-opacity-90 ' : 'top-4 right-4 bottom-4 w-[calc(100%-32px)] md:w-[calc(25%-32px)] h-[calc(100%-32px)]'} bg-gray-900 text-white flex flex-col shadow-lg z-40 transition-transform transform md:translate-x-0 ${isCollapsed && !isOverlay ? 'translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
-                    <div className="flex justify-between items-center p-4 border-b border-pink-600">
-                        <h2 className="text-xl font-bold">CHAT</h2>
-                        {isOverlay && (
-                            <button
-                                className="md:hidden text-white"
-                                onClick={toggleCollapse}
-                            >
-                                ×
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4" ref={messageListRef}>
-                        {isLoading ? (
-                            <div className="justify-center">
-                                <LoadingComponent loading={true} key={"chat"}/>
-                            </div>
-                        ) : (
-                            <>
-                                {messages.map((message) => (
-                                    <div
-                                        key={message._id}
-                                        className={`p-2 ${message.type === 'system' ? 'text-center' : 'border-b border-gray-700'} hover:bg-gray-800 group`}
-                                        onContextMenu={(e) => handleContextMenu(e, message, message.type)}
-                                    >
-                                        <div className="relative">
-                                            <div
-                                                className="absolute hidden group-hover:flex items-center right-0 top-0 space-x-2">
-                                                <button className="p-1"
-                                                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                                                    <FaSmile/>
-                                                </button>
-                                                <button className="p-1"
-                                                        onClick={(e) => handleContextMenu(e, message, message.type)}>
-                                                    <FaEllipsisV/>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {message.user && (
-                                            <div className="flex items-center space-x-2">
-                                                <img
-                                                    src={getAvatarsIconUrl(message.user)}
-                                                    alt={message.user.id}
-                                                    className="w-8 h-8 rounded-full cursor-pointer"
-                                                    onClick={() => handleUserClick(message.user)}
-                                                />
-                                                <span className="font-bold cursor-pointer"
-                                                      onClick={() => handleUserClick(message.user)}>
-                                                {message.user.name}
-                                            </span>
-                                                <div
-                                                    className="text-sm text-gray-500 inline-flex space-x-3">{renderBadges(message.profile.flags)}</div>
-                                            </div>
-                                        )}
-                                        {message.type === 'system' ? (
-                                            <div className="flex space-x-3 items-center justify-center">
-                                                <FaCog/>
-                                                <div>{message.content}</div>
-                                            </div>
-                                        ) : message.type === 'gif' ? (
-                                            <div>
-                                                <img
-                                                    src={message.content}
-                                                    data-gif={message.content}
-                                                    className="rounded cursor-pointer"
-                                                    alt="GIF"
-                                                />
-                                            </div>
-                                        ) : message.type === 'bot' ? (
-                                            <div className="relative pl-12">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <img
-                                                        src={getAvatarsIconUrl(message.author)}
-                                                        alt={message.author!.id}
-                                                        className="w-8 h-8 rounded-full cursor-pointer"
-                                                        onClick={() => handleUserClick(message.author)}
-                                                    />
-                                                    <span className="font-bold text-indigo-500 cursor-pointer"
-                                                          onClick={() => handleUserClick(message.author)}>
-                                                    {message.author!.name}
-                                                </span>
-                                                    <span className="text-gray-400">used</span>
-                                                    <span
-                                                        className="bg-blue-600 text-white px-2 py-1 rounded">{message.command}</span>
-                                                </div>
-                                                <div className="ml-10 relative">
-                                                    <div
-                                                        className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
-                                                    {message.embeds && message.embeds.map((embed, i) => (
-                                                        <EmbedMessage key={i} embed={embed}/>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ) : message.type === 'reply' ? (
-                                            <div className="relative">
-                                                <div className="ml-10 relative border-l-4 border-gray-600 pl-4">
-                                                    {message.repliedMessage ? (
-                                                        <div className="mb-2 bg-gray-800 p-2 rounded">
-                                                            <div className="flex items-center space-x-2">
-                                                                <img
-                                                                    src={getAvatarsIconUrl(message.repliedMessage.user)}
-                                                                    alt={message.repliedMessage.user.id}
-                                                                    className="w-6 h-6 rounded-full cursor-pointer"
-                                                                    onClick={() => handleUserClick(message.repliedMessage!.user)}
-                                                                />
-                                                                <span className="font-bold cursor-pointer"
-                                                                      onClick={() => handleUserClick(message.repliedMessage!.user)}>
-                                                                    {message.repliedMessage.user.name}
-                                                                </span>
-                                                            </div>
-                                                            <div className="ml-8 text-sm text-gray-500">
-                                                                {message.repliedMessage.content}
-                                                            </div>
-                                                        </div>
-                                                    ) : null}
-                                                    <div className="flex items-center space-x-2 mb-2">
-                                                        <img
-                                                            src={getAvatarsIconUrl(message.user)}
-                                                            alt={message.user!.id}
-                                                            className="w-8 h-8 rounded-full cursor-pointer"
-                                                            onClick={() => handleUserClick(message.user)}
-                                                        />
-                                                        <span className="font-bold text-indigo-500 cursor-pointer"
-                                                              onClick={() => handleUserClick(message.user)}>
-                                                            {message.user!.name}
-                                                        </span>
-                                                        <span className="text-gray-400">replied</span>
-                                                    </div>
-                                                    <div
-                                                        className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
-                                                    <div>
-                                                        <HighlightUserMention user={{name: user?.name}}
-                                                                              message={{content: message.content}}/>
-                                                        {message.profile && hasPermission(message.profile, CHAT_PERMISSION.SEND_LINKS) && (
-                                                            <>
-                                                                {detectUrls(message.content!)?.map((url) => (
-                                                                    <Embed url={url} key={url}/>
-                                                                ))}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <HighlightUserMention user={{name: user?.name}}
-                                                                      message={{content: message.content}}/>
-                                                {message.profile && hasPermission(message.profile, CHAT_PERMISSION.SEND_LINKS) && (
-                                                    <>
-                                                        {detectUrls(message.content!)?.map((url) => (
-                                                            <Embed url={url} key={url}/>
-                                                        ))}
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
-                                        {renderEmojiReactions(message.reactions)}
-                                    </div>
-                                ))}
-                            </>
-                        )}
-                    </div>
-                    {status === 'loading' ? (
-                        <div className="p-4 border-t border-pink-600">
+            <div
+                className={`fixed ${isOverlay ? 'top-4 left-4 w-[90%] max-w-md h-[90%] bg-opacity-90 ' : 'top-4 right-4 bottom-4 w-[calc(100%-32px)] md:w-[calc(25%-32px)] h-[calc(100%-32px)]'} bg-gray-900 text-white flex flex-col shadow-lg z-40 transition-transform transform md:translate-x-0 ${isCollapsed && !isOverlay ? 'translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
+                <div className="flex justify-between items-center p-4 border-b border-pink-600">
+                    <h2 className="text-xl font-bold">CHAT</h2>
+                    {isOverlay && (
+                        <button
+                            className="md:hidden text-white"
+                            onClick={toggleCollapse}
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+                <div className="flex-1 overflow-y-auto p-4" ref={messageListRef}>
+                    {isLoading ? (
+                        <div className="justify-center">
                             <LoadingComponent loading={true} key={"chat"}/>
                         </div>
-                    ) : session ? (
-                        hasPermission(profile, CHAT_PERMISSION.SEND_MESSAGE) ? (
-                            <div className="p-4 border-t border-pink-600">
-                                {replyTo && (
-                                    <div
-                                        className="p-2 bg-gray-700 text-white flex justify-between items-center rounded-md mb-2">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="text-gray-400">
-                                                Replying to <span
-                                                className="font-bold text-indigo-400">@{replyTo.user?.name}</span>:
-                                            </div>
-                                            <div className="bg-gray-800 p-2 rounded-md text-sm">
-                                                {replyTo.content}
-                                            </div>
+                    ) : (
+                        <>
+                            {messages.map((message) => (
+                                <div
+                                    key={message._id}
+                                    className={`p-2 ${message.type === 'system' ? 'text-center' : 'border-b border-gray-700'} hover:bg-gray-800 group`}
+                                    onContextMenu={(e) => handleContextMenu(e, message, message.type)}
+                                >
+                                    <div className="relative">
+                                        <div
+                                            className="absolute hidden group-hover:flex items-center right-0 top-0 space-x-2">
+                                            <button className="p-1"
+                                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                                                <FaSmile/>
+                                            </button>
+                                            <button className="p-1"
+                                                    onClick={(e) => handleContextMenu(e, message, message.type)}>
+                                                <FaEllipsisV/>
+                                            </button>
                                         </div>
-                                        <button onClick={() => setReplyTo(null)}
-                                                className="text-red-500 hover:text-red-700 ml-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5"
-                                                 viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd"
-                                                      d="M10 9l3.293-3.293a1 1 0 011.414 1.414L11.414 10l3.293 3.293a1 1 0 01-1.414 1.414L10 11.414l-3.293 3.293a1 1 0 01-1.414-1.414L8.586 10 5.293 6.707a1 1 0 011.414-1.414L10 8.586z"
-                                                      clipRule="evenodd"/>
-                                            </svg>
-                                        </button>
                                     </div>
-                                )}
-                                <div className="flex">
-                                    <input
-                                        type="text"
-                                        className="flex-1 p-2 bg-gray-700 border-none outline-none"
-                                        placeholder="Type a message..."
-                                        value={content}
-                                        onChange={handleEmojiInput}
-                                        onKeyDown={(e) => {
-                                            if (e.key == "Enter") {
-                                                handleSendMessage();
-                                            }
-                                        }}
-                                        ref={inputRef}
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => handleSendMessage()}
-                                    >
-                                        <FaArrowRight/>
-                                    </Button>
-                                    {!isOverlay && user && hasPermission(profile, CHAT_PERMISSION.SEND_EMOJIS) && (
-                                        <>
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                                            >
-                                                <FaFaceSmile/>
-                                            </Button>
-                                            {showEmojiPicker && (
-                                                <div className="absolute bottom-16 right-4">
-                                                    <Picker data={data} onEmojiSelect={handleEmojiClick}/>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                    {user && hasPermission(profile, CHAT_PERMISSION.SEND_GIF) && (
-                                        <>
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setShowGifPicker(!showGifPicker)}
-                                            >
-                                                <FaImages/>
-                                            </Button>
-                                            {showGifPicker && (
-                                                <div className="absolute bottom-16 right-4 bg-white z-50">
-                                                    <GifPicker tenorApiKey={"AIzaSyBVQLYT3FONCEj_r6425suu7I5CDH4copQ"}
-                                                               onGifClick={handleSendGif} theme={Theme.DARK} locale="cs"
-                                                               contentFilter={ContentFilter.HIGH}/>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                                {commandSuggestions.length > 0 && (
-                                    <div
-                                        className="absolute bottom-16 left-0 w-full bg-gray-800 p-4 shadow-lg rounded-md z-50">
-                                        <div className="flex flex-col space-y-2">
-                                            {commandSuggestions.map((suggestion, index) => (
-                                                <div key={index}
-                                                     className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md"
-                                                     onClick={(e) => handleCommand(suggestion)}>
-                                                    <span className="text-white font-semibold">/{suggestion.name}</span>
-                                                    <span
-                                                        className="text-gray-400 text-sm">{suggestion.description}</span>
-                                                </div>
-                                            ))}
+                                    {message.user && (
+                                        <div className="flex items-center space-x-2">
+                                            <img
+                                                src={getAvatarsIconUrl(message.user)}
+                                                alt={message.user.id}
+                                                className="w-8 h-8 rounded-full cursor-pointer"
+                                                onClick={() => handleUserClick(message.user)}
+                                            />
+                                            <span className="font-bold cursor-pointer"
+                                                  onClick={() => handleUserClick(message.user)}>
+                                                {message.user.name}
+                                            </span>
+                                            <div
+                                                className="text-sm text-gray-500 inline-flex space-x-3">{renderBadges(message.profile.flags)}</div>
                                         </div>
-                                        {commandOptions.length > 0 && (
-                                            <div className="mt-2 border-t border-gray-700 pt-2">
-                                                {commandOptions.map((option, index) => (
+                                    )}
+                                    {message.type === 'system' ? (
+                                        <div className="flex space-x-3 items-center justify-center">
+                                            <FaCog/>
+                                            <div>{message.content}</div>
+                                        </div>
+                                    ) : message.type === 'gif' ? (
+                                        <div>
+                                            <img
+                                                src={message.content}
+                                                data-gif={message.content}
+                                                className="rounded cursor-pointer"
+                                                alt="GIF"
+                                            />
+                                        </div>
+                                    ) : message.type === 'command' ? (
+                                        <div className="relative pl-12">
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <img
+                                                    src={getAvatarsIconUrl(message.author)}
+                                                    alt={message.author!.id}
+                                                    className="w-8 h-8 rounded-full cursor-pointer"
+                                                    onClick={() => handleUserClick(message.author)}
+                                                />
+                                                <span className="font-bold text-indigo-500 cursor-pointer"
+                                                      onClick={() => handleUserClick(message.author)}>
+                                                    {message.author!.name}
+                                                </span>
+                                                <span className="text-gray-400">used</span>
+                                                <span
+                                                    className="bg-blue-600 text-white px-2 py-1 rounded">{message.command}</span>
+                                            </div>
+                                            <div className="relative">
+                                                <div
+                                                    className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
+                                                {message.embeds && message.embeds.map((embed, i) => (
+                                                    <EmbedMessage key={i} embed={embed}/>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : message.type === 'bot' ? (
+                                        <div className="relative pl-12">
+                                            <div className="relative">
+                                                <div
+                                                    className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
+                                                {message.embeds && message.embeds.map((embed, i) => (
+                                                    <EmbedMessage key={i} embed={embed}/>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : message.type === 'reply' ? (
+                                        <div className="relative">
+                                            <div className="ml-10 relative border-l-4 border-gray-600 pl-4">
+                                                {message.repliedMessage ? (
+                                                    <div className="mb-2 bg-gray-800 p-2 rounded">
+                                                        <div className="flex items-center space-x-2">
+                                                            <img
+                                                                src={getAvatarsIconUrl(message.repliedMessage.user)}
+                                                                alt={message.repliedMessage.user.id}
+                                                                className="w-6 h-6 rounded-full cursor-pointer"
+                                                                onClick={() => handleUserClick(message.repliedMessage!.user)}
+                                                            />
+                                                            <span className="font-bold cursor-pointer"
+                                                                  onClick={() => handleUserClick(message.repliedMessage!.user)}>
+                                                                    {message.repliedMessage.user.name}
+                                                                </span>
+                                                        </div>
+                                                        <div className="ml-8 text-sm text-gray-500">
+                                                            {message.repliedMessage.content}
+                                                        </div>
+                                                    </div>
+                                                ) : null}
+                                                <div className="flex items-center space-x-2 mb-2">
+                                                    <img
+                                                        src={getAvatarsIconUrl(message.user)}
+                                                        alt={message.user!.id}
+                                                        className="w-8 h-8 rounded-full cursor-pointer"
+                                                        onClick={() => handleUserClick(message.user)}
+                                                    />
+                                                    <span className="font-bold text-indigo-500 cursor-pointer"
+                                                          onClick={() => handleUserClick(message.user)}>
+                                                            {message.user!.name}
+                                                        </span>
+                                                    <span className="text-gray-400">replied</span>
+                                                </div>
+                                                <div
+                                                    className="absolute left-[-20px] top-2 h-0 w-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-gray-800 border-b-[10px] border-b-transparent"></div>
+                                                <div>
+                                                    <HighlightUserMention user={{name: user?.name}}
+                                                                          message={{content: message.content}}/>
+                                                    {message.profile && hasPermission(message.profile, CHAT_PERMISSION.SEND_LINKS) && (
+                                                        <>
+                                                            {detectUrls(message.content!)?.map((url) => (
+                                                                <Embed url={url} key={url}/>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <HighlightUserMention user={{name: user?.name}}
+                                                                  message={{content: message.content}}/>
+                                            {message.profile && hasPermission(message.profile, CHAT_PERMISSION.SEND_LINKS) && (
+                                                <>
+                                                    {detectUrls(message.content!)?.map((url) => (
+                                                        <Embed url={url} key={url}/>
+                                                    ))}
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                    {renderEmojiReactions(message, message.reactions)}
+                                </div>
+                            ))}
+                        </>
+                    )}
+                </div>
+                {status === 'loading' ? (
+                    <div className="p-4 border-t border-pink-600">
+                        <LoadingComponent loading={true} key={"chat"}/>
+                    </div>
+                ) : session ? (
+                    hasPermission(profile, CHAT_PERMISSION.SEND_MESSAGE) ? (
+                        <div className="p-4 border-t border-pink-600">
+                            {replyTo && (
+                                <div
+                                    className="p-2 bg-gray-700 text-white flex justify-between items-center rounded-md mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="text-gray-400">
+                                            Replying to <span
+                                            className="font-bold text-indigo-400">@{replyTo.user?.name}</span>:
+                                        </div>
+                                        <div className="bg-gray-800 p-2 rounded-md text-sm">
+                                            {replyTo.content}
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setReplyTo(null)}
+                                            className="text-red-500 hover:text-red-700 ml-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5"
+                                             viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd"
+                                                  d="M10 9l3.293-3.293a1 1 0 011.414 1.414L11.414 10l3.293 3.293a1 1 0 01-1.414 1.414L10 11.414l-3.293 3.293a1 1 0 01-1.414-1.414L8.586 10 5.293 6.707a1 1 0 011.414-1.414L10 8.586z"
+                                                  clipRule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            )}
+                            <div className="flex">
+                                <input
+                                    type="text"
+                                    className="flex-1 p-2 bg-gray-700 border-none outline-none"
+                                    placeholder="Type a message..."
+                                    value={content}
+                                    onChange={handleEmojiInput}
+                                    onKeyDown={(e) => {
+                                        if (e.key == "Enter") {
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                    ref={inputRef}
+                                />
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleSendMessage()}
+                                >
+                                    <FaArrowRight/>
+                                </Button>
+                                {!isOverlay && user && hasPermission(profile, CHAT_PERMISSION.SEND_EMOJIS) && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                        >
+                                            <FaFaceSmile/>
+                                        </Button>
+                                        {showEmojiPicker && (
+                                            <div className="absolute bottom-16 right-4">
+                                                <Picker data={data} onEmojiSelect={handleEmojiClick}/>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                                {user && hasPermission(profile, CHAT_PERMISSION.SEND_GIF) && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setShowGifPicker(!showGifPicker)}
+                                        >
+                                            <FaImages/>
+                                        </Button>
+                                        {showGifPicker && (
+                                            <div className="absolute bottom-16 right-4 bg-white z-50">
+                                                <GifPicker tenorApiKey={"AIzaSyBVQLYT3FONCEj_r6425suu7I5CDH4copQ"}
+                                                           onGifClick={handleSendGif} theme={Theme.DARK} locale="cs"
+                                                           contentFilter={ContentFilter.HIGH}/>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                            {user && hasPermission(profile, CHAT_PERMISSION.USE_COMMAND) && (
+                                <>
+                                    {commandSuggestions.length > 0 && (
+                                        <div
+                                            className="absolute bottom-16 left-0 w-full bg-gray-800 p-4 shadow-lg rounded-md z-50">
+                                            <div className="flex flex-col space-y-2">
+                                                {commandSuggestions.map((suggestion, index) => (
                                                     <div key={index}
-                                                         className="flex justify-between p-2 hover:bg-gray-700 rounded-md">
-                                                        <span className="text-white">{option.name}</span>
+                                                         className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md"
+                                                         onClick={(e) => handleCommand(suggestion)}>
+                                                        <span className="text-white font-semibold">/{suggestion.name}</span>
                                                         <span
-                                                            className="text-gray-400 text-sm">{option.description}</span>
+                                                            className="text-gray-400 text-sm">{suggestion.description}</span>
                                                     </div>
                                                 ))}
                                             </div>
-                                        )}
-                                    </div>
-                                )}
-                                {emojiSuggestions.length > 0 && (
-                                    <div
-                                        className="absolute bottom-16 left-0 w-full bg-gray-800 p-4 shadow-lg rounded-md z-50">
-                                        <div className="flex flex-col space-y-2">
-                                            {emojiSuggestions.map((emoji, index) => (
-                                                <div key={index}
-                                                     className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md"
-                                                     onClick={(e) => handleEmojiSuggestionClick(emoji)}>
-                                                    <span className="text-white font-semibold">{emoji}</span>
-                                                    <span className="text-gray-400 text-sm"></span>
+                                            {commandOptions.length > 0 && (
+                                                <div className="mt-2 border-t border-gray-700 pt-2">
+                                                    {commandOptions.map((option, index) => (
+                                                        <div key={index}
+                                                             className="flex justify-between p-2 hover:bg-gray-700 rounded-md">
+                                                            <span className="text-white">{option.name}</span>
+                                                            <span
+                                                                className="text-gray-400 text-sm">{option.description}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
+                                    )}
+                                </>
+                            )}
+                            {emojiSuggestions.length > 0 && (
+                                <div
+                                    className="absolute bottom-16 left-0 w-full bg-gray-800 p-4 shadow-lg rounded-md z-50">
+                                    <div className="flex flex-col space-y-2">
+                                        {emojiSuggestions.map((emoji, index) => (
+                                            <div key={index}
+                                                 className="cursor-pointer flex justify-between p-2 hover:bg-gray-700 rounded-md"
+                                                 onClick={(e) => handleEmojiSuggestionClick(emoji)}>
+                                                <span className="text-white font-semibold">{emoji}</span>
+                                                <span className="text-gray-400 text-sm"></span>
+                                            </div>
+                                        ))}
                                     </div>
-                                )}
-                            </div>
-                        ) : (
-                            <p className="text-center">You are restricted from sending messages.</p>
-                        )
-                    ) : (
-                        <div className="flex flex-col items-center justify-center p-4 border-t border-pink-600">
-                            <p className="mb-4 text-center">Please log in to send messages.</p>
-                            <Button
-                                variant="outline"
-                                onClick={() => signIn('discord', {callbackUrl: window.location.href})}
-                            >
-                                <div className="flex space-x-3 items-center">
-                                    <FaDiscord/>
-                                    <p>Log in</p>
                                 </div>
-                            </Button>
+                            )}
                         </div>
-                    )}
-                </div>
-            </DraggableCore>
+                    ) : (
+                        <p className="text-center">You are restricted from sending messages.</p>
+                    )
+                ) : !isChatEnabled ? (
+                    <div className="flex flex-col items-center justify-center p-4 border-t border-pink-600">
+                        <p className="mb-4 text-center">The chat was disabled by a administrator.</p>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center p-4 border-t border-pink-600">
+                        <p className="mb-4 text-center">Please log in to send messages.</p>
+                        <Button
+                            variant="outline"
+                            onClick={() => signIn('discord', {callbackUrl: window.location.href})}
+                        >
+                            <div className="flex space-x-3 items-center">
+                                <FaDiscord/>
+                                <p>Log in</p>
+                            </div>
+                        </Button>
+                    </div>
+                )}
+            </div>
             <Menu id="context-menu">
                 {profile && hasPermission(profile, CHAT_PERMISSION.DELETE_MESSAGE) && (
                     <Item onClick={({props}) => handleDeleteMessage(props.message._id)}> <FaTrash/> Delete</Item>

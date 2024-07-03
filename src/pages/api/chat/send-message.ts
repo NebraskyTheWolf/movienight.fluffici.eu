@@ -3,16 +3,12 @@ import Pusher from 'pusher';
 import { CHAT_PERMISSION } from '@/lib/constants';
 import {hasPermission} from "@/lib/utils.ts";
 import connectToDatabase from "@/lib/mongodb.ts";
-import Message from "@/models/Message.ts";
 import Stream from "@/models/Stream.ts";
 import {getServerSession, User} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
-
-import { Message as CMessage } from '@/lib/types.ts'
-import message from "@/models/Message.ts";
-import EmbedMessage from "@/components/EmbedMessage.tsx";
-import {IProfile} from "@/models/Profile.ts";
+import Message from "@/models/Message.ts";
 import ChatSettings from "@/models/ChatSettings.ts";
+import { EmbedMessage } from "@/lib/types.ts";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -39,9 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const {content, type } = req.body;
 
-    if (content instanceof EmbedMessage) {
+    if (content && content.embeds != null)
         return res.status(400).json({ status: false, error: 'Invalid message content' });
-    }
 
     const { streamId } = stream
     const { user } = session!;
@@ -60,20 +55,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         reactions: []
     }
 
-    if (type !== "user" && type !== "gif") {
+    if (type !== "user" && type !== "gif")
         return res.status(400).json({ status: false, error: 'Invalid message type' });
-    }
-
-    if (type === 'gif' && !hasPermission(session.profile, CHAT_PERMISSION.SEND_GIF)) {
+    if (type === 'gif' && !hasPermission(session.profile, CHAT_PERMISSION.SEND_GIF))
         return res.status(403).json({ status: false, error: 'Forbidden' });
-    }
 
     const chatSettings = await ChatSettings.findOne({ _id: '668348b752dc60219a0aa9fe' })
 
     let isContentBlacklisted = false;
     if (chatSettings) {
         if (!chatSettings.enableChat)
-            return res.status(403).json({ status: false, error: 'The chat was disabled by a administrator' });
+            return res.status(200).json({ status: false, error: 'The chat was disabled by a administrator' });
 
         chatSettings.autoModeration.blacklist.forEach(value => {
             if (content.includes(value))
@@ -87,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (isContentBlacklisted)
-        return res.status(403).json({ status: false, error: 'Your message contains blacklisted words' });
+        return res.status(200).json({ status: false, error: 'Your message contains blacklisted words' });
 
     try {
         const newMessage = new Message({
@@ -101,7 +93,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
         const data = await newMessage.save();
-
         const id = data._id;
 
         await pusher.trigger('presence-chat-channel', 'new-message', {

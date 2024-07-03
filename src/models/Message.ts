@@ -65,7 +65,7 @@ export interface IRepliedMessage {
     streamId: string;
     content?: string;
     command?: string;
-    type: 'user' | 'system' | 'gif' | 'bot' | 'reply';
+    type: 'user' | 'system' | 'gif' | 'bot' | 'reply' | 'command';
     user: User;
     author?: User;
     profile: IProfile;
@@ -79,7 +79,7 @@ export interface IMessage {
     streamId: string;
     content?: string;
     command?: string;
-    type: 'user' | 'system' | 'gif' | 'bot' | 'reply';
+    type: 'user' | 'system' | 'gif' | 'bot' | 'reply' | 'command';
     user: User;
     author?: User;
     profile: IProfile;
@@ -98,17 +98,14 @@ const UserSchema: Schema = new Schema({
 const ProfileSchema: Schema = new Schema({
     discordId: {
         type: String,
-        required: true,
         unique: true
     },
     permissions: {
         type: Number,
-        required: true,
         default: 0
     },
     flags: {
         type: Number,
-        required: true,
         default: 1
     },
     sanction: {
@@ -122,25 +119,24 @@ const ProfileSchema: Schema = new Schema({
                 reason: String
             }
         },
-        required: false,
         default: {}
     }
 });
 
 const ReactionSchema: Schema = new Schema({
-    emoji: { type: String, required: true },
-    users: { type: [UserSchema], required: true },
+    emoji: { type: String },
+    users: { type: [UserSchema] },
 });
 
 const RepliedMessageSchema: Schema = new Schema({
-    streamId: { type: String, required: true },
+    streamId: { type: String, required: false },
     content: { type: String, required: false },
     command: { type: String, required: false },
-    type: { type: String, enum: ['user', 'system', 'gif', 'bot', 'reply'], required: true },
-    user: { type: UserSchema, required: true },
+    type: { type: String, enum: ['user', 'system', 'gif', 'bot', 'reply', 'command'], required: false },
+    user: { type: UserSchema, required: false },
     author: { type: UserSchema, required: false },
-    profile: { type: ProfileSchema, required: true },
-    timestamp: { type: Number, required: true },
+    profile: { type: ProfileSchema, required: false },
+    timestamp: { type: Number, required: false },
     reactions: { type: [ReactionSchema], default: [] },
     embeds: { type: [EmbedMessage], default: [] }
 });
@@ -150,7 +146,7 @@ const MessageSchema: Schema = new Schema({
     streamId: { type: String, required: true },
     content: { type: String, required: false },
     command: { type: String, required: false },
-    type: { type: String, enum: ['user', 'system', 'gif', 'bot', 'reply'], required: true },
+    type: { type: String, enum: ['user', 'system', 'gif', 'bot', 'reply', 'command'], required: true },
     user: { type: UserSchema, required: true },
     author: { type: UserSchema, required: false },
     profile: { type: ProfileSchema, required: true },
