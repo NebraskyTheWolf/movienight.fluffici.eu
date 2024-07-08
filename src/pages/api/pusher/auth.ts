@@ -26,6 +26,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!hasPermission(session.profile, CHAT_PERMISSION.JOIN_PRESENCE))
         return res.status(403).json({ error: 'Insufficient permissions' });
 
+    // Disclosing the email address due to GDPR constraints
+    session.user.email = "disclosed"
+
     const { socket_id, channel_name } = req.body;
     const presenceData = {
         user_id: session.user.id,
