@@ -77,7 +77,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const [activeMessage, setActiveMessage] = useState<IMessage | null>();
     const {data: session, status, update} = useSession();
-    const messageListRef = useRef<HTMLDivElement>(null); // Add a ref for the message list
+    const messageListRef = useRef<HTMLDivElement>(null);
 
     const user = session?.user;
 
