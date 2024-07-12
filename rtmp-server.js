@@ -44,7 +44,6 @@ try {
 }
 
 const config = {
-    logType: 3,
     rtmp: {
         port: 1990,
         chunk_size: 60000,
@@ -63,11 +62,23 @@ const config = {
             {
                 app: 'live',
                 vc: process.env.VC,
+                vcParam: [
+                    '-crf', '23',
+                    '-preset', 'superfast',
+                    '-profile:v', 'baseline',
+                    '-level', '3.0',
+                    '-tune', 'zerolatency',
+                    '-x264-params', 'nal-hrd=cbr:force-cfr=1',
+                    '-b:v', '2500k',
+                    '-minrate', '2500k',
+                    '-maxrate', '2500k',
+                    '-bufsize', '5000k'
+                ],
                 ac: process.env.AC,
+                acParam: ['-ab', '64k', '-ac', '1', '-ar', '44100'],
+                rtmp:true,
                 hls: true,
-                hlsFlags: '[hls_time=2:hls_list_size=3:hls_flags=delete_segments]',
-                dash: true,
-                dashFlags: '[f=dash:window_size=3:extra_window_size=5]'
+                hlsFlags: '[hls_time=4:hls_list_size=12:hls_flags=delete_segments+split_by_time]',
             }
         ]
     }

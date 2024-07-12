@@ -8,10 +8,7 @@ import Stream from "@/models/Stream.ts";
 import {getServerSession, User} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
-import { Message as CMessage } from '@/lib/types.ts'
-import message from "@/models/Message.ts";
 import EmbedMessage from "@/components/EmbedMessage.tsx";
-import {IProfile} from "@/models/Profile.ts";
 import ChatSettings from "@/models/ChatSettings.ts";
 
 const pusher = new Pusher({

@@ -2,8 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
 import path from 'path';
 import Redis from "ioredis";
-import {getServerSession} from "next-auth";
-import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 const redis = new Redis(process.env.REDIS_URL!);
 

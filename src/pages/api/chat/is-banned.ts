@@ -1,10 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Pusher from 'pusher';
-import { CHAT_PERMISSION } from '@/lib/constants';
 import connectToDatabase from "@/lib/mongodb.ts";
-import Message from "@/models/Message.ts";
-import {hasPermission} from "@/lib/utils.ts";
-import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
 import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";

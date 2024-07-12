@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import ChatSettings, {IChatSettings} from '@/models/ChatSettings';
+import ChatSettings from '@/models/ChatSettings';
 import connectToDatabase from "@/lib/mongodb.ts";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";

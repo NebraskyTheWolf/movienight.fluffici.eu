@@ -47,6 +47,7 @@ const PERMISSION_CHANGED_EVENT = 'permission_changed';
 const USER_MUTED_EVENT = 'user-muted';
 const BANNED_USER_EVENT = 'banned-user';
 const WELCOME_EVENT = 'welcome';
+const MESSAGE_REACTION_EVENT = 'message-reaction';
 
 interface ChatProps {
     streamId?: string;
@@ -151,7 +152,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         fetchMessages();
         fetchProfile();
         isBanned();
-    }, [session, user, update]);
+    }, []);
 
     useEffect(() => {
         const channel = pusher.subscribe(CHANNEL_NAME);
@@ -168,17 +169,17 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             );
         });
 
-        channel.bind(PERMISSION_CHANGED_EVENT, (data: { id: string, permissions: number }) => {
+        channel.bind(PERMISSION_CHANGED_EVENT, async (data: { id: string, permissions: number }) => {
             if (user && data.id === user.id) {
-                update({...session, profile: {...user, permissions: data.permissions}});
+                await update({...session, profile: {...user, permissions: data.permissions}});
                 showToast("Vaše oprávnění byla aktualizována.", "info");
             }
         });
 
-        channel.bind(REACT_MESSAGE_EVENT, (data: { messageId: string, reactions: [] }) => {
+        channel.bind(MESSAGE_REACTION_EVENT, (data: { id: string, reactions: [] }) => {
             setMessages((prevMessages) =>
                 prevMessages.map(msg =>
-                    msg._id === data.messageId ? {...msg, reactions: data.reactions} : msg
+                    msg._id === data.id ? {...msg, reactions: data.reactions} : msg
                 )
             );
         });
@@ -525,7 +526,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
             prevMessages.map(msg => msg._id === updatedMessage._id ? updatedMessage : msg)
         );
 
-        await axios.post('/api/chat/react-message', {messageId: updatedMessage._id, user, emoji});
+        await axios.post('/api/chat/react-message', {message: updatedMessage});
         setShowEmojiPicker(false);
     };
 
