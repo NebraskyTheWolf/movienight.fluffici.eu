@@ -393,9 +393,18 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         setIsCollapsed(!isCollapsed);
     };
 
-    const handleEmojiClick = (emojiObject: any, event: any) => {
-        setContent(content + emojiObject.native);
-        setShowEmojiPicker(false)
+    const handleEmojiClick = async (emojiObject: any, event: any) => {
+        if (activeMessage) {
+            await handleReactionClick(activeMessage, {
+                emoji: emojiObject.native,
+                users: []
+            })
+
+            setActiveMessage(null)
+        } else {
+            setContent(content + emojiObject.native);
+            setShowEmojiPicker(false)
+        }
     };
 
     const handleEmojiInput = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -546,6 +555,11 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
         }
     }
 
+    const handleReactionMessage = (message: IMessage) => {
+        setActiveMessage(message)
+        setShowEmojiPicker(!showEmojiPicker)
+    }
+
     return (
         <>
             {showWarning && (
@@ -598,7 +612,7 @@ const Chat: React.FC<ChatProps> = ({ isOverlay = false, streamId }) => {
                                         <div
                                             className="absolute hidden group-hover:flex items-center right-0 top-0 space-x-2">
                                             <button className="p-1"
-                                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                                                    onClick={() => handleReactionMessage(message)}>
                                                 <FaSmile/>
                                             </button>
                                             <button className="p-1"
