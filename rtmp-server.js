@@ -62,23 +62,11 @@ const config = {
             {
                 app: 'live',
                 vc: process.env.VC,
-                vcParam: [
-                    '-crf', '23',
-                    '-preset', 'superfast',
-                    '-profile:v', 'baseline',
-                    '-level', '3.0',
-                    '-tune', 'zerolatency',
-                    '-x264-params', 'nal-hrd=cbr:force-cfr=1',
-                    '-b:v', '2500k',
-                    '-minrate', '2500k',
-                    '-maxrate', '2500k',
-                    '-bufsize', '5000k'
-                ],
+               // vcParam: ['-crf', '23', '-preset', 'superfast', '-profile:v', 'baseline', '-level', '3.0', '-tune', 'zerolatency', '-x264-params', 'nal-hrd=cbr:force-cfr=1', '-b:v', '2500k', '-minrate', '2500k', '-maxrate', '2500k', '-bufsize', '5000k'],
                 ac: process.env.AC,
                 acParam: ['-ab', '64k', '-ac', '1', '-ar', '44100'],
-                rtmp:true,
                 hls: true,
-                hlsFlags: '[hls_time=4:hls_list_size=12:hls_flags=delete_segments+split_by_time]',
+                hlsFlags: '[hls_time=6:hls_list_size=18:hls_flags=delete_segments+split_by_time+round_durations+discont_start]'
             }
         ]
     }

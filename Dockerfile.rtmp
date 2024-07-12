@@ -11,7 +11,12 @@ RUN npm ci --only=production
 COPY . .
 
 # Set up FFmpeg
-RUN apt-get update && apt-get install -y ffmpeg
+RUN apt-get update && \
+    apt-get install -y wget tar && \
+    wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+    tar -xf ffmpeg-release-amd64-static.tar.xz && \
+    mv ffmpeg-*-static/ffmpeg ffmpeg-*-static/ffprobe /usr/local/bin/ && \
+    rm -r ffmpeg-*-static ffmpeg-release-amd64-static.tar.xz
 
 VOLUME ./media
 
