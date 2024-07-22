@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, { useState } from 'react';
 import {GetSessionParams, getSession, useSession} from "next-auth/react";
@@ -14,24 +14,6 @@ import {CHAT_PERMISSION} from "@/lib/constants.ts";
 import {Link} from 'lucide-react';
 import UsersSection from "@/components/users.tsx";
 import ChatSection from './ChatSection';
-
-export async function getServerSideProps(context: { req: GetSessionParams | undefined; }) {
-    const session = await getSession(context.req)
-
-    if (!session ||
-        !hasPermission(session?.profile, CHAT_PERMISSION.MODERATION_DASHBOARD)) {
-        return {
-            redirect: {
-                destination: '/',
-                permanent: false,
-            },
-        }
-    }
-
-    return {
-        props: {},
-    };
-}
 
 const DashboardScreen: React.FC = () => {
     const [activeSection, setActiveSection] = useState<string>('home');
