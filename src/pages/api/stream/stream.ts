@@ -1,8 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import connectToDatabase from '@/lib/mongodb.ts';
 import Stream from '@/models/Stream.ts';
-import {getServerSession} from "next-auth";
-import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {

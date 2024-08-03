@@ -4,7 +4,6 @@ import { CHAT_PERMISSION } from '@/lib/constants.ts';
 import connectToDatabase from "@/lib/mongodb.ts";
 import Message from "@/models/Message.ts";
 import {hasPermission} from "@/lib/utils.ts";
-import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
 import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
@@ -31,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const requestingUser = await Profile.findOne({ discordId: session.user.id });
 
-    if (!requestingUser || !hasPermission(requestingUser, CHAT_PERMISSION.SEND_MESSAGE)) {
+    if (!requestingUser || !hasPermission(requestingUser, CHAT_PERMISSION.DELETE_MESSAGE)) {
         return res.status(403).json({ error: 'Forbidden' });
     }
 

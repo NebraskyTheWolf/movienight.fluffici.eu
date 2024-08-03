@@ -1,13 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import connectToDatabase from '@/lib/mongodb.ts';
 import Stream from '@/models/Stream.ts';
-import path from 'path';
 import Profile from "@/models/Profile.ts";
-import { v4 } from 'uuid';
-import {getSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
-import {decodeFromBase64} from "next/dist/build/webpack/loaders/utils";
 import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 

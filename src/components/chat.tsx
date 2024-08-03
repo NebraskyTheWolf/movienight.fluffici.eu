@@ -38,10 +38,8 @@ import {User} from "next-auth";
 import {hasPermissions} from "@/lib/permission.ts";
 import LoadingComponent from "@/components/Loading.tsx";
 
-import DraggableCore, {ControlPosition} from "react-draggable"
 const CHANNEL_NAME = 'presence-chat-channel';
 const NEW_MESSAGE_EVENT = 'new-message';
-const REACT_MESSAGE_EVENT = 'react-message';
 const DELETE_MESSAGE_EVENT = 'delete-message';
 const PERMISSION_CHANGED_EVENT = 'permission_changed';
 const USER_MUTED_EVENT = 'user-muted';

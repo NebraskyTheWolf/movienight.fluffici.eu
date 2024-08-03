@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import connectToDatabase from '@/lib/mongodb.ts';
 import Profile from "@/models/Profile.ts";
-import {getSession} from "next-auth/react";
 import {hasPermission} from "@/lib/utils.ts";
 import {CHAT_PERMISSION} from "@/lib/constants.ts";
 import { getServerSession } from 'next-auth';

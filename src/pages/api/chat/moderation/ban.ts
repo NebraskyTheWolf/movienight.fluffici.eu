@@ -2,11 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Pusher from 'pusher';
 import { CHAT_PERMISSION } from '@/lib/constants.ts';
 import connectToDatabase from "@/lib/mongodb.ts";
-import Message from "@/models/Message.ts";
 import {hasPermission} from "@/lib/utils.ts";
-import {getSession, useSession} from "next-auth/react";
 import Profile from "@/models/Profile.ts";
-import {removePermission} from "@/lib/permission.ts";
 import {v4} from "uuid";
 import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
@@ -40,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await connectToDatabase();
 
-    const { userId, reason} = req.body;
+    const { userId, reason } = req.body;
 
     const requestingUser = await Profile.findOne({ discordId: session.user.id });
     const targetUser = await Profile.findOne({ discordId: userId});

@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ status: false, error: 'Stream not found' });
     }
 
-    const {content, type } = req.body;
+    const { content, type } = req.body;
 
     if (content && content.embeds != null)
         return res.status(400).json({ status: false, error: 'Invalid message content' });

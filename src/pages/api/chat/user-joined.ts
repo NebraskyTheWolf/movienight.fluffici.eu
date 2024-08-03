@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     redis.set(`stream:${key}/${user.id}`, 1)
-    redis.expire(`stream:${key}/${user.id}`, 3600)
+    redis.expire(`stream:${key}/${user.id}`, 8600)
 
     try {
         await pusher.trigger('presence-chat-channel', 'new-message', message);

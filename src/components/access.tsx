@@ -10,15 +10,10 @@ import {useRouter} from "next/navigation";
 
 const AccessGate: React.FC =  () => {
     const { data: session } = useSession()
-    const router = useRouter()
 
     if (!session) {
-        router.forward()
-
         return null;
     } else if (!hasPermission(session?.profile, CHAT_PERMISSION.MODERATION_DASHBOARD)) {
-        router.forward()
-
         return null;
     }
 

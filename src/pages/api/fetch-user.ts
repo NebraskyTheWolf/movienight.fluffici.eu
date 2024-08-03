@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import connectToDatabase from '@/lib/mongodb.ts';
 import Profile from "@/models/Profile.ts";
-import {getSession} from "next-auth/react";
 import { getServerSession } from 'next-auth';
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 

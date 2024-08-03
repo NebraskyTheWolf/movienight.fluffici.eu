@@ -5,7 +5,7 @@ import {hasPermission} from "@/lib/utils.ts";
 import connectToDatabase from "@/lib/mongodb.ts";
 import Message from "@/models/Message.ts";
 import Stream from "@/models/Stream.ts";
-import {getServerSession, User} from "next-auth";
+import {getServerSession} from "next-auth";
 import {authOptions} from "@/pages/api/auth/[...nextauth].ts";
 
 import EmbedMessage from "@/components/EmbedMessage.tsx";

@@ -6,6 +6,7 @@ import connectToDatabase from "@/lib/mongodb.ts";
 import Stream from "@/models/Stream.ts";
 import {User} from "next-auth";
 import {EmbedMessage} from "@/lib/types.ts";
+import Redis from "ioredis";
 
 const pusher = new Pusher({
     appId: process.env.PUSHER_APP_ID!,
@@ -14,6 +15,8 @@ const pusher = new Pusher({
     cluster: process.env.PUSHER_CLUSTER!,
     useTLS: true,
 });
+
+const redis = new Redis(process.env.REDIS_URL!);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST')
@@ -29,6 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const stream = await Stream.findOne({});
     if (!stream)
         return res.status(404).json({ status: false, error: 'Stream not found' });
+    if (await redis.exists(target.user.id))
+        return res.status(200).json({ status: true, error: 'Welcome already acknowledged' });
 
     const {streamId, type, user, profile, timestamp, reactions, embeds} = {
         streamId: stream.streamId,
@@ -62,6 +67,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ],
         embeds: buildEmbed(target)
     }
+
+    await redis.set(target.id, "done")
 
     const newMessage = new Message({streamId, type, user, profile, timestamp, reactions, embeds});
 

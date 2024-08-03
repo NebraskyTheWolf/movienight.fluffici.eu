@@ -18,7 +18,6 @@ import { OnProgressProps } from "react-player/base";
 import Tooltip from 'rc-tooltip';
 import 'rc-tooltip/assets/bootstrap.css';
 import Chat from '@/components/chat';
-import { RingLoader } from 'react-spinners';
 import { IStream } from "@/models/Stream.ts";
 import { signOut, useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/utils.ts";
@@ -28,9 +27,6 @@ import { showToast } from "@/components/toast.tsx";
 import { User } from "next-auth";
 import { throttle } from "lodash";
 import { useRouter } from "next/navigation";
-import EmbedMessage from "@/components/EmbedMessage.tsx";
-import moment from "moment";
-import Event from '../models/Event.ts'
 import LoadingComponent from "@/components/Loading.tsx";
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
@@ -44,7 +40,6 @@ const Player: React.FC<PlayerProps> = () => {
     const [duration, setDuration] = useState<string>();
     const [volume, setVolume] = useState<number>(0.5); // Výchozí hlasitost je 0,5 (50 %)
     const [isMuted, setMuted] = useState<boolean>(false);
-    const [hasError, setHasError] = useState<boolean>(false);
     const [showControls, setShowControls] = useState<boolean>(true);
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
     const [showChat, setShowChat] = useState<boolean>(true); // Chat viditelný ve výchozím nastavení
@@ -57,7 +52,6 @@ const Player: React.FC<PlayerProps> = () => {
     const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
     const audioRef = useRef<HTMLAudioElement>(null); // Ref pro zvukový prvek
     const [streamUrl, setStreamUrl] = useState('');
-    const [events, setEvents] = useState<Event[]>()
     const [showLatestEvent, setShowLatestEvent] = useState<boolean>(true)
     const [playerKey, setPlayerKey] = useState<number>(0);
 
@@ -89,9 +83,9 @@ const Player: React.FC<PlayerProps> = () => {
 
     useEffect(() => {
         if (loading && isMusicPlaying && audioRef.current) {
-            audioRef.current.play(); // Přehrávejte hudbu, když začne načítání
+            audioRef.current.play();
         } else if (audioRef.current) {
-            audioRef.current.pause(); // Pozastavit hudbu, když načítání skončí
+            audioRef.current.pause();
         }
     }, [loading, isMusicPlaying]);
 
@@ -101,20 +95,11 @@ const Player: React.FC<PlayerProps> = () => {
                 const response = await axios.get('/api/stream/stream');
                 setStreamInfo(response.data);
                 setStreamUrl(window.location.href + 'api/stream/video');
-                setHasError(false);
             } catch (error) {
                 console.error("Nepodařilo se získat informace o streamu", error);
-                setHasError(true);
-                setHasError(false);
             }
         };
 
-        const fetchEvents = async () => {
-            const response = await axios.get('https://api.fluffici.eu/api/events');
-            setEvents(response.data.data)
-        }
-
-        fetchEvents()
         fetchStreamInfo();
     }, []);
 
@@ -216,7 +201,6 @@ const Player: React.FC<PlayerProps> = () => {
 
     const handleReady = () => {
         setLoading(false);
-        setHasError(false);
     };
 
     const handleError = () => {

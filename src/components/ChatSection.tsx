@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import {decodeFromBase64, encodeToBase64} from "next/dist/build/webpack/loaders/utils";
 import {showToast} from "@/components/toast.tsx";
 
 interface AutoModerationSettings {
