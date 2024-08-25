@@ -9,7 +9,7 @@ interface ExternalRedirectProps {
     url: string;
 }
 
-export const ExternalRedirect: React.FC<ExternalRedirectProps> = ({ isOpen, url}) => {
+export const ExternalRedirect: React.FC<ExternalRedirectProps> = ({ isOpen, url }) => {
     return (
         <Dialog open={isOpen} onOpenChange={() => isOpen = false}>
             <DialogContent>
