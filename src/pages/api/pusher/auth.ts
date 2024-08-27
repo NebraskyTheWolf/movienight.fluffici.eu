@@ -28,6 +28,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Disclosing the email address due to GDPR constraints
     session.user.email = "disclosed"
+    // session.user.streamKey = "disclosed" //Disclosing the stream-key 
+    
 
     const { socket_id, channel_name } = req.body;
     const presenceData = {

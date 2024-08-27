@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (alreadyJoined)
         return res.status(400).json({ error: 'User already joined' });
 
-    const content = `${user.name} has joined the chat.`;
+    const content = `${user.name} se připojil/a do chatu`;
 
     const message = {
         id: v4(),
