@@ -14,7 +14,11 @@ const AccessGate: React.FC =  () => {
     if (!session) {
         return null;
     } else if (!hasPermission(session?.profile, CHAT_PERMISSION.MODERATION_DASHBOARD)) {
-        return null;
+        return (
+            <div className={""}>
+
+            </div>
+        );
     }
 
     return (
